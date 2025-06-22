@@ -1,5 +1,9 @@
+import torch
+
+
 def main():
-    print("Hello from tuna-r!")
+    print(torch.__version__)
+    print(torch.cuda.is_available())
 
 
 if __name__ == "__main__":

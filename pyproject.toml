@@ -4,4 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fair-esm>=2.0.0",
+    "torch>=2.7.1",
+    "uncertaintyawaredeeplearn",
+]
+
+[tool.uv.sources]
+uncertaintyawaredeeplearn = { git = "https://github.com/jlparkI/uncertaintyAwareDeepLearn", rev = "0.0.5" }
