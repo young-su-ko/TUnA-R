@@ -1,13 +1,12 @@
 import torch
 import pytorch_lightning as pl
-from ..models.mlp import MLP
-from .base_module import BaseModule
-from ..utils import mean_field_average
+from tuna.models._tuna import TUnA
+from tuna.pl_modules.base_module import BaseModule
 
-class LitMLP(BaseModule):
+class LitTUnA(BaseModule):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.model = MLP(*args, **kwargs)
+        self.model = TUnA(*args, **kwargs)
         self.save_hyperparameters()
 
     def forward(self, proteinA, proteinB, update_precision=False, get_var=False):
@@ -21,13 +20,13 @@ class LitMLP(BaseModule):
         self.log('train_loss', loss)
         self.log_binary_classification_metrics(y, logit.squeeze(), logit, prefix="train/")
         return loss
-    
+
     def validation_step(self, batch, batch_idx):
         proteinA, proteinB, y = batch
         logit = self(proteinA, proteinB, update_precision=False, get_var=False)
         loss = torch.nn.functional.binary_cross_entropy_with_logits(logit.squeeze(), y.float())
         self.log('val_loss', loss)
-        self.log_binary_classification_metrics(y, logit, logit, prefix="val/")
+        self.log_binary_classification_metrics(y, logit.squeeze(), logit, prefix="val/")
         return loss
 
     def predict_step(self, batch, batch_idx):
@@ -35,10 +34,11 @@ class LitMLP(BaseModule):
         last_epoch = self.is_last_epoch()
         if last_epoch:
             logit, var = self(proteinA, proteinB, update_precision=False, get_var=True)
-            logit = mean_field_average(logit, var)
+            self.log('test_var', var.mean())
+            self.log_binary_classification_metrics(y, logit.squeeze(), logit, prefix="test/")
         else:
             logit = self(proteinA, proteinB, update_precision=False, get_var=False)
-
+            self.log_binary_classification_metrics(y, logit.squeeze(), logit, prefix="test/")
         loss = torch.nn.functional.binary_cross_entropy_with_logits(logit.squeeze(), y.float())
         self.log('test_loss', loss)
-        self.log_binary_classification_metrics(y, logit, logit, prefix="test/")
+        return loss 

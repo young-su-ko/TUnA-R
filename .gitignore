@@ -1,0 +1,5 @@
+*.egg-info/
+*.pyc
+slurm_outputs/
+.venv/
+.python-version

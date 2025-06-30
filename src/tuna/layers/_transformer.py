@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from typing import Optional
-from ..models.model_utils import make_linear_layer
+from tuna.layers._multiheadattention import MultiHeadAttention
+from tuna.models.model_utils import make_linear_layer
 
 class TransformerBlock(nn.Module):
     def __init__(self, hid_dim: int, ffn_dim: int, n_heads: int, dropout: float, spectral_norm: bool):

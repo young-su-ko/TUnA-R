@@ -5,8 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "einops>=0.8.1",
     "fair-esm>=2.0.0",
     "hydra-core>=1.3.2",
+    "lightning>=2.5.2",
     "torch>=2.7.1",
     "uncertaintyawaredeeplearn",
     "wandb>=0.20.1",
@@ -14,3 +16,5 @@ dependencies = [
 
 [tool.uv.sources]
 uncertaintyawaredeeplearn = { git = "https://github.com/jlparkI/uncertaintyAwareDeepLearn", rev = "0.0.5" }
+[tool.setuptools.packages.find]
+where = ["src"]

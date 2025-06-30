@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Dataset
 import torch
 from typing import Optional, Dict, Tuple
-from src.datamodule.datamodule_utils import make_masks, pad_batch, combine
+from tuna.datamodule.datamodule_utils import make_masks, pad_batch, combine
 
 class PPIDataset(Dataset):
     def __init__(self, interaction_file: str, embeddings: Dict[str, torch.Tensor]):

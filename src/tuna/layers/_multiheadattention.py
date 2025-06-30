@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from einops import rearrange
 from torch import Tensor
 from typing import Optional
-from utils import make_linear_layer
+from tuna.models.model_utils import make_linear_layer
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, hid_dim: int, n_heads: int, dropout: float, spectral_norm: bool):
