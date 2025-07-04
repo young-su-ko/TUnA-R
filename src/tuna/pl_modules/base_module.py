@@ -3,6 +3,8 @@ import torch
 import torchmetrics
 
 class BaseModule(pl.LightningModule):
+    # These are helper functions to check the current state of the training,
+    # Used for the last layer gaussian process, not used for T-FC and ESM-MLP.
     def is_last_epoch(self):
         # Returns True if this is the last epoch
         return (self.current_epoch == self.trainer.max_epochs - 1)

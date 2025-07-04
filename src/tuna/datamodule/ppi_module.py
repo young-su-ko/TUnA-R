@@ -58,13 +58,14 @@ def collate_protein_batch(batch, device, embedding_type="residue"):
 
         return protA_padded, protB_padded, labels, masks
 
-
-
 class PPIDataModule(pl.LightningDataModule):
-    def __init__(self, config, embedding_type="residue"):
+    def __init__(self, config):
         super().__init__()
         self.config = config
-        self.embedding_type = embedding_type # per-residue or per-protein
+        if self.config.model == "tuna" or self.config.model == "tfc":
+            self.embedding_type = "residue"
+        elif self.config.model == "esm_gp" or self.config.model == "esm_mlp":
+            self.embedding_type = "protein"
 
     def setup(self, stage: Optional[str] = None):
         if stage == "fit" or stage is None:

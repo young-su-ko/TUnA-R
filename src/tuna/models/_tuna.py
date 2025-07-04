@@ -76,6 +76,10 @@ class TUnA(nn.Module):
         proteinBA = self.inter_encoder(proteinBA)
 
         ppi_feature, _ = torch.max(torch.cat((proteinAB, proteinBA), dim=-1), dim=1)
-        logits = self.output_layer(ppi_feature, update_precision=update_precision, get_var=get_variance)
+
+        if self.llgp:
+            logits = self.output_layer(ppi_feature, update_precision=update_precision, get_var=get_variance)
+        else:
+            logits = self.output_layer(ppi_feature)
 
         return logits

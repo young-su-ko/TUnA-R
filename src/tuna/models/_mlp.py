@@ -66,6 +66,9 @@ class MLP(nn.Module):
         x = self.relu(x)
         x = self.do(x)
 
-        logits = self.output_layer(x, update_precision=update_precision, get_var=get_variance)
+        if self.llgp:
+            logits = self.output_layer(x, update_precision=update_precision, get_var=get_variance)
+        else:
+            logits = self.output_layer(x)
 
         return logits
