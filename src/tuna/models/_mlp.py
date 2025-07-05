@@ -54,7 +54,7 @@ class MLP(nn.Module):
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
 
-    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, update_precision: bool | None = False, get_variance: bool | None = False) -> torch.Tensor:
+    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, update_precision: bool, get_variance: bool) -> torch.Tensor:
         concatenated = torch.cat((proteinA, proteinB), dim=1)
         x = self.fc1(concatenated)
         x = self.relu(x)

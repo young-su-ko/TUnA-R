@@ -60,7 +60,7 @@ class TUnA(nn.Module):
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
 
-    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], update_precision: bool | None = False, get_variance: bool | None = False) -> torch.Tensor:
+    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], update_precision: bool, get_variance: bool) -> torch.Tensor:
         maskA, maskB, maskAB, maskBA = masks
         
         proteinA = self.down_project(proteinA)
