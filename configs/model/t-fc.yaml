@@ -1,22 +1,28 @@
-model:
-  embedding_dim: 640
+defaults:
+  - base_model
+  - _self_
+
+type: t-fc
+
+architecture:
+  protein_dim: 640
   hid_dim: 64
   ff_dim: 256
   n_layers: 1
   n_heads: 8
-
-  max_sequence_length: 512
   dropout: 0.2
-  llgp: False
-  spectral_norm: False
   out_targets: 1
+  spectral_norm: False
+  llgp: False
+
 
 training:
   batch_size: 16
   learning_rate: 0.0001
   weight_decay: 0.00001
   epochs: 5
- 
-optimizer:
-  step_size: 1
-  gamma: 0.93
+  
+  scheduler:
+    step_size: 2
+    gamma: 0.93
+  

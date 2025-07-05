@@ -1,0 +1,8 @@
+# PPI dataset configuration
+name: gold-standard
+
+paths:
+  train: "/new-stg/home/young/TUnA-R/data/ppi/train.fasta"
+  val: "/new-stg/home/young/TUnA-R/data/ppi/val.fasta"
+  test: "/new-stg/home/young/TUnA-R/data/ppi/test.fasta"
+  embeddings: "/new-stg/home/young/TUnA-R/data/ppi/embeddings.pt"

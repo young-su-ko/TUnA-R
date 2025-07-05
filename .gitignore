@@ -3,3 +3,4 @@
 slurm_outputs/
 .venv/
 .python-version
+checkpoints/

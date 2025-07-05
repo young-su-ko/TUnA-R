@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 from uncertaintyAwareDeepLearn import VanillaRFFLayer
-from torch import Tensor
-from typing import Optional
 from tuna.models.model_utils import make_linear_layer
 import warnings
 
@@ -15,10 +13,10 @@ class MLP(nn.Module):
         llgp: bool,
         spectral_norm: bool,
         out_targets: int = 1,
-        rff_features: Optional[int] = 4096,
-        gp_cov_momentum: Optional[float] = -1,
-        gp_ridge_penalty: Optional[float] = 1,
-        likelihood_function: str = "binary_logistic",
+        rff_features: int | None,
+        gp_cov_momentum: float | None,
+        gp_ridge_penalty: float | None,
+        likelihood_function: str | None,
     ):
         super().__init__()
         self.protein_dim = protein_dim
@@ -48,15 +46,15 @@ class MLP(nn.Module):
                 likelihood_function=likelihood_function,
             )
         else:
-            self.output_layer = make_linear_layer(self.hid_dim, 1, self.spectral_norm)
+            self.output_layer = make_linear_layer(self.hid_dim, out_targets, self.spectral_norm)
 
         self.apply(self._init_weights)
 
-    def _init_weights(self, module):
+    def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
 
-    def forward(self, proteinA: Tensor, proteinB: Tensor, update_precision: Optional[bool] = False, get_variance: Optional[bool] = False) -> Tensor:
+    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, update_precision: bool | None = False, get_variance: bool | None = False) -> torch.Tensor:
         concatenated = torch.cat((proteinA, proteinB), dim=1)
         x = self.fc1(concatenated)
         x = self.relu(x)

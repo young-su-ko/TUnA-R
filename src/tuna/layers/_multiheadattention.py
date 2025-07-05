@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-from torch import Tensor
-from typing import Optional
 from tuna.models.model_utils import make_linear_layer
 
 class MultiHeadAttention(nn.Module):
@@ -21,7 +19,7 @@ class MultiHeadAttention(nn.Module):
         self.v = make_linear_layer(hid_dim, hid_dim, spectral_norm)
         self.output = make_linear_layer(hid_dim, hid_dim, spectral_norm)
 
-    def forward(self, x: Tensor, mask: Optional[Tensor] = None) -> Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         q = self.q(x)
         k = self.k(x)
         v = self.v(x)

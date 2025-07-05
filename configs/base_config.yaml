@@ -1,23 +1,19 @@
 defaults:
-  - model: tuna # options [tuna, tfc, esm_gp, esm_mlp]
+  - model: None # options [tuna, tuna-gp, esm-mlp, esm-gp]
+  - dataset: None # options [gold-standard, mouse, fly, worm, yeast, ecoli]
   - _self_
 
-data:
-  train_file: "/new-stg/home/young/TUnA-R/data/train.fasta"
-  val_file: "/new-stg/home/young/TUnA-R/data/val.fasta"
-  test_file: "/new-stg/home/young/TUnA-R/data/test.fasta"
-  embedding_file: "/new-stg/home/young/TUnA-R/data/embeddings.pt"
-  batch_size: 16
+seed: 42
+
+wandb:
+  project: "TUnA-R"
+
+trainer:
+  accelerator: auto
+  devices: auto
+
+datamodule:
+  max_sequence_length: 512
   num_workers: 4
   pin_memory: True
   persistent_workers: True
-
-training:
-  seed: 42
-  project_name: "TUnA-R"
-
-trainer:
-  max_epochs: 10
-  accelerator: auto
-  devices: auto
-  precision: 32

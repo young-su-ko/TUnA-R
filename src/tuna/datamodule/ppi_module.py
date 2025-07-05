@@ -1,11 +1,12 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Dataset
 import torch
-from typing import Optional, Dict, Tuple
 from tuna.datamodule.datamodule_utils import make_masks, pad_batch, combine
 
+# TODO: add docstrings in numpy format
+
 class PPIDataset(Dataset):
-    def __init__(self, interaction_file: str, embeddings: Dict[str, torch.Tensor]):
+    def __init__(self, interaction_file: str, embeddings: dict[str, torch.Tensor]):
         self.embeddings = embeddings
 
         self.data = []
@@ -17,14 +18,14 @@ class PPIDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         proteinA, proteinB, interaction = self.data[idx]
         proteinA_embedding = self.embeddings[proteinA]
         proteinB_embedding = self.embeddings[proteinB]
 
         return proteinA_embedding, proteinB_embedding, interaction
 
-def collate_protein_batch(batch, device, embedding_type="residue"):
+def collate_protein_batch(batch: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]], device: torch.device, embedding_type: str = "residue") -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | tuple[torch.Tensor, torch.Tensor, torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]]:
     """
     Collate function for PPI batches.
     Args:
@@ -59,7 +60,7 @@ def collate_protein_batch(batch, device, embedding_type="residue"):
         return protA_padded, protB_padded, labels, masks
 
 class PPIDataModule(pl.LightningDataModule):
-    def __init__(self, config):
+    def __init__(self, config: DictConfig):
         super().__init__()
         self.config = config
         if self.config.model == "tuna" or self.config.model == "tfc":
@@ -67,8 +68,8 @@ class PPIDataModule(pl.LightningDataModule):
         elif self.config.model == "esm_gp" or self.config.model == "esm_mlp":
             self.embedding_type = "protein"
 
-    def setup(self, stage: Optional[str] = None):
-        if stage == "fit" or stage is None:
+    def setup(self, stage: str):
+        if stage == "fit":
             self.train_dataset = PPIDataset(
                 self.config.data.train_file,
                 self.config.data.train_embeddings_dir,

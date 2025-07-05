@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
-from torch import Tensor
 import math
 
-def mean_field_average(logits: Tensor, variance: Tensor) -> Tensor:
+def mean_field_average(logits: torch.Tensor, variance: torch.Tensor) -> torch.Tensor:
     """
     When we have the variance of the logits during inference, we 
     adjust the logits to get a better estimate of the probability.
@@ -23,3 +22,8 @@ def make_linear_layer(in_features: int, out_features: int, spectral_norm: bool =
         layer = spectral_norm(layer)
     return layer
 
+def is_llgp(model: nn.Module) -> bool:
+    """
+    This is a helper function to check if the model is a LLGP model.
+    """
+    return model.llgp

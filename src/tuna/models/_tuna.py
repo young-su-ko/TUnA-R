@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 from uncertaintyAwareDeepLearn import VanillaRFFLayer
-from torch import Tensor
-from typing import Optional
 from tuna.layers._transformer import Encoder
 from tuna.models.model_utils import make_linear_layer
 import warnings
@@ -19,10 +17,10 @@ class TUnA(nn.Module):
         llgp: bool,
         spectral_norm: bool,
         out_targets: int = 1,
-        rff_features: Optional[int] = 4096,
-        gp_cov_momentum: Optional[float] = -1,
-        gp_ridge_penalty: Optional[float] = 1,
-        likelihood_function: Optional[str] = "binary_logistic",
+        rff_features: int | None,
+        gp_cov_momentum: float | None,
+        gp_ridge_penalty: float | None,
+        likelihood_function: str | None,
     ):
         super().__init__()
         self.protein_dim = protein_dim
@@ -50,7 +48,7 @@ class TUnA(nn.Module):
                 likelihood_function=likelihood_function,
             )
         else:
-            self.output_layer = make_linear_layer(self.hid_dim, 1, self.spectral_norm)
+            self.output_layer = make_linear_layer(self.hid_dim, out_targets, self.spectral_norm)
 
         self.down_project = make_linear_layer(self.protein_dim, self.hid_dim, self.spectral_norm)
         self.intra_encoder = Encoder(self.protein_dim, self.hid_dim, self.n_layers, self.n_heads, self.ff_dim, self.dropout, self.spectral_norm)
@@ -62,18 +60,20 @@ class TUnA(nn.Module):
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
 
-    def forward(self, proteinA: Tensor, proteinB: Tensor, mask: Optional[Tensor] = None, update_precision: Optional[bool] = False, get_variance: Optional[bool] = False) -> Tensor:
+    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], update_precision: bool | None = False, get_variance: bool | None = False) -> torch.Tensor:
+        maskA, maskB, maskAB, maskBA = masks
+        
         proteinA = self.down_project(proteinA)
         proteinB = self.down_project(proteinB)
 
-        proteinA = self.intra_encoder(proteinA)
-        proteinB = self.intra_encoder(proteinB)
+        proteinA = self.intra_encoder(proteinA, maskA)
+        proteinB = self.intra_encoder(proteinB, maskB)
 
         proteinAB = torch.cat((proteinA, proteinB), dim=1)
         proteinBA = torch.cat((proteinB, proteinA), dim=1)
         
-        proteinAB = self.inter_encoder(proteinAB)
-        proteinBA = self.inter_encoder(proteinBA)
+        proteinAB = self.inter_encoder(proteinAB, maskAB)
+        proteinBA = self.inter_encoder(proteinBA, maskBA)
 
         ppi_feature, _ = torch.max(torch.cat((proteinAB, proteinBA), dim=-1), dim=1)
 

@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-from torch import Tensor
-from typing import Optional
 from tuna.layers._multiheadattention import MultiHeadAttention
 from tuna.models.model_utils import make_linear_layer
 
@@ -27,7 +25,7 @@ class TransformerBlock(nn.Module):
         self.ffn_layer_norm = nn.LayerNorm(hid_dim)
         self.output_layer_norm = nn.LayerNorm(hid_dim)
 
-    def forward(self, x: Tensor, mask: Optional[Tensor] = None) -> Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         residual = x
         x = self.attention(x, mask=mask)
         x = self.do(x)
@@ -54,7 +52,7 @@ class Encoder(nn.Module):
 
         self.layers = nn.ModuleList([TransformerBlock(hid_dim, ffn_dim, n_heads, dropout, spectral_norm) for _ in range(n_layers)])
 
-        def forward(self, x: Tensor, mask: Optional[Tensor] = None):
+        def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
             for layer in self.layers:
                 x = layer(x, mask=mask)
             return x

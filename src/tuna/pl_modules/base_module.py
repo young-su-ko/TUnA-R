@@ -5,19 +5,19 @@ import torchmetrics
 class BaseModule(pl.LightningModule):
     # These are helper functions to check the current state of the training,
     # Used for the last layer gaussian process, not used for T-FC and ESM-MLP.
-    def is_last_epoch(self):
+    def _is_last_epoch(self) -> bool:
         # Returns True if this is the last epoch
         return (self.current_epoch == self.trainer.max_epochs - 1)
 
-    def is_training(self):
+    def _is_training(self):
         # Returns True if in training step
         return self.training
 
-    def is_testing(self):
+    def _is_testing(self):
         # Returns True if in test step
         return self.testing
 
-    def log_binary_classification_metrics(self, y_true, y_pred, y_prob, prefix=""):
+    def _log_binary_classification_metrics(self, y_true: torch.Tensor, y_pred: torch.Tensor, y_prob: torch.Tensor, prefix: str = ""):
         # y_true: ground truth labels (tensor, 0/1)
         # y_pred: predicted labels (tensor, 0/1)
         # y_prob: predicted probabilities (tensor, float)
