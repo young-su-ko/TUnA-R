@@ -3,9 +3,28 @@ import torch.nn as nn
 from uncertaintyAwareDeepLearn import VanillaRFFLayer
 from tuna.layers._transformer import Encoder
 from tuna.models.model_utils import make_linear_layer
+from tuna.config.model_config import TUnAConfig
 import warnings
 
 class TUnA(nn.Module):
+    @classmethod
+    def from_config(cls, config: TUnAConfig) -> "TUnA":
+        return cls(
+            protein_dim=config.architecture.protein_dim,
+            hid_dim=config.architecture.hid_dim,
+            dropout=config.architecture.dropout,
+            n_layers=config.architecture.n_layers,
+            n_heads=config.architecture.n_heads,
+            ff_dim=config.architecture.ff_dim,
+            llgp=config.architecture.llgp,
+            spectral_norm=config.architecture.spectral_norm,
+            out_targets=config.architecture.out_targets,
+            rff_features=config.architecture.rff_features,
+            gp_cov_momentum=config.architecture.gp_cov_momentum,
+            gp_ridge_penalty=config.architecture.gp_ridge_penalty,
+            likelihood_function=config.architecture.likelihood_function,
+        )
+
     def __init__(
         self,
         protein_dim: int,
@@ -17,10 +36,10 @@ class TUnA(nn.Module):
         llgp: bool,
         spectral_norm: bool,
         out_targets: int = 1,
-        rff_features: int | None,
-        gp_cov_momentum: float | None,
-        gp_ridge_penalty: float | None,
-        likelihood_function: str | None,
+        rff_features: int | None = None,
+        gp_cov_momentum: float | None = None,
+        gp_ridge_penalty: float | None = None,
+        likelihood_function: str | None = None,
     ):
         super().__init__()
         self.protein_dim = protein_dim

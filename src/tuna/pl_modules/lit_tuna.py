@@ -3,13 +3,14 @@ import pytorch_lightning as pl
 from tuna.models._tuna import TUnA
 from tuna.pl_modules.base_module import BaseModule
 from tuna.models.model_utils import is_llgp, mean_field_average
+from tuna.config.model_config import TUnAConfig
 
 class LitTUnA(BaseModule):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-        self.model = TUnA(*args, **kwargs)
+    def __init__(self, config: TUnAConfig):
+        super().__init__(config)
+        self.model = TUnA.from_config(config)
         self.save_hyperparameters()
-
+    
     def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None, update_precision: bool = False, get_var: bool = False) -> torch.Tensor:
         if is_llgp(self.model):
             return self.model(proteinA, proteinB, update_precision=update_precision, get_variance=get_var)

@@ -11,6 +11,7 @@ wandb:
 trainer:
   accelerator: auto
   devices: auto
+  precision: auto
 
 datamodule:
   max_sequence_length: 512

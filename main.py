@@ -12,57 +12,6 @@ from tuna.pl_modules.lit_mlp import LitMLP
 from tuna.pl_modules.lit_tuna import LitTUnA
 from tuna.datamodule.ppi_module import PPIDataModule
 
-def get_model(cfg: DictConfig):
-    """
-    Initialize the appropriate model based on configuration.
-    
-    Available models:
-    - TUnA: Transformer-based model for protein-protein interaction
-    - TUnA-GP: TUnA with last layer Gaussian Process
-    - MLP: Multi-layer perceptron baseline
-    - MLP-GP: MLP with last layer Gaussian Process
-    """
-    model_type = cfg.model.type.lower()
-    arch_cfg = cfg.model.architecture
-    
-    if model_type in ["tuna", "tuna-gp"]:
-        model = LitTUnA(
-            protein_dim=arch_cfg.protein_dim,
-            hid_dim=arch_cfg.hid_dim,
-            dropout=arch_cfg.dropout,
-            n_layers=arch_cfg.n_layers,
-            n_heads=arch_cfg.n_heads,
-            ff_dim=arch_cfg.ff_dim,
-            llgp=model_type == "tuna-gp",
-            spectral_norm=arch_cfg.spectral_norm,
-            rff_features=arch_cfg.get("rff_features", 4096),
-            gp_cov_momentum=arch_cfg.get("gp_cov_momentum", -1),
-            gp_ridge_penalty=arch_cfg.get("gp_ridge_penalty", 1),
-        )
-    elif model_type in ["mlp", "mlp-gp"]:
-        model = LitMLP(
-            protein_dim=arch_cfg.protein_dim,
-            hid_dim=arch_cfg.hid_dim,
-            dropout=arch_cfg.dropout,
-            llgp=model_type == "mlp-gp",
-            spectral_norm=arch_cfg.spectral_norm,
-            rff_features=arch_cfg.get("rff_features", 4096),
-            gp_cov_momentum=arch_cfg.get("gp_cov_momentum", -1),
-            gp_ridge_penalty=arch_cfg.get("gp_ridge_penalty", 1),
-        )
-    else:
-        raise ValueError(
-            f"Unknown model type: {model_type}. "
-            "Available options: tuna, tuna-gp, mlp, mlp-gp"
-        )
-    
-    # Set up optimizer and scheduler
-    optimizer = get_optimizer(model, cfg)
-    scheduler = get_scheduler(optimizer, cfg)
-    model.configure_optimizers = lambda: {"optimizer": optimizer, "lr_scheduler": scheduler}
-    
-    return model
-
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: DictConfig):
     pl.seed_everything(cfg.seed)
@@ -90,18 +39,22 @@ def main(cfg: DictConfig):
         )
     ]
 
+    if cfg.model.type == "tuna" or cfg.model.type == "t-fc":
+        model = LitTUnA(cfg.model)
+    elif cfg.model.type == "esm-mlp" or cfg.model.type == "esm-gp":
+        model = LitMLP(cfg.model)
+    else:
+        raise ValueError(f"Model type {cfg.model.type} not supported")
+
     trainer = pl.Trainer(
-        max_epochs=cfg.trainer.max_epochs,
+        max_epochs=cfg.model.trainer.max_epochs,
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         precision=cfg.trainer.precision,
         logger=wandb_logger,
         callbacks=callbacks,
-        gradient_clip_val=cfg.model.training.gradient_clip_val,
-        accumulate_grad_batches=cfg.model.training.accumulate_grad_batches,
     )
     
-    model = get_model(cfg)
     data_module = PPIDataModule(
         train_file=cfg.dataset.paths.train,
         val_file=cfg.dataset.paths.val,

@@ -3,11 +3,12 @@ import pytorch_lightning as pl
 from tuna.models._mlp import MLP
 from tuna.pl_modules.base_module import BaseModule
 from tuna.models.model_utils import is_llgp, mean_field_average
+from tuna.config.model_config import MLPConfig
 
 class LitMLP(BaseModule):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-        self.model = MLP(*args, **kwargs)
+    def __init__(self, config: MLPConfig):
+        super().__init__(config)
+        self.model = MLP.from_config(config)
         self.save_hyperparameters()
 
     def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, update_precision: bool = False, get_var: bool = False) -> torch.Tensor:

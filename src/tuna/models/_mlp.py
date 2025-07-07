@@ -2,9 +2,25 @@ import torch
 import torch.nn as nn
 from uncertaintyAwareDeepLearn import VanillaRFFLayer
 from tuna.models.model_utils import make_linear_layer
+from tuna.config.model_config import MLPConfig
 import warnings
 
 class MLP(nn.Module):
+    @classmethod
+    def from_config(cls, config: MLPConfig) -> "MLP":
+        return cls(
+            protein_dim=config.architecture.protein_dim,
+            hid_dim=config.architecture.hid_dim,
+            dropout=config.architecture.dropout,
+            llgp=config.architecture.llgp,
+            spectral_norm=config.architecture.spectral_norm,
+            out_targets=config.architecture.out_targets,
+            rff_features=config.architecture.rff_features,
+            gp_cov_momentum=config.architecture.gp_cov_momentum,
+            gp_ridge_penalty=config.architecture.gp_ridge_penalty,
+            likelihood_function=config.architecture.likelihood_function,
+        )
+
     def __init__(
         self,
         protein_dim: int,

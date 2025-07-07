@@ -20,7 +20,7 @@ training:
   batch_size: 16
   learning_rate: 0.0001
   weight_decay: 0.00001
-  epochs: 5
+  max_epochs: 5
   
   scheduler:
     step_size: 2
