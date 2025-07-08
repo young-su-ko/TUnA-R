@@ -1,9 +1,10 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Dataset
 import torch
-from tuna.datamodule.datamodule_utils import make_masks, pad_batch, combine
-
+from tuna.datamodule.datamodule_utils import make_masks, pad_batch, combine_masks
+from omegaconf import DictConfig
 # TODO: add docstrings in numpy format
+
 
 class PPIDataset(Dataset):
     def __init__(self, interaction_file: str, embeddings: dict[str, torch.Tensor]):
@@ -25,7 +26,20 @@ class PPIDataset(Dataset):
 
         return proteinA_embedding, proteinB_embedding, interaction
 
-def collate_protein_batch(batch: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]], device: torch.device, embedding_type: str = "residue") -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | tuple[torch.Tensor, torch.Tensor, torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]]:
+
+def collate_protein_batch(
+    batch: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    device: torch.device,
+    embedding_type: str = "residue",
+) -> (
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+    | tuple[
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    ]
+):
     """
     Collate function for PPI batches.
     Args:
@@ -44,7 +58,7 @@ def collate_protein_batch(batch: list[tuple[torch.Tensor, torch.Tensor, torch.Te
         protA_pooled = torch.stack([p.mean(dim=0) for p in protAs])
         protB_pooled = torch.stack([p.mean(dim=0) for p in protBs])
         return protA_pooled, protB_pooled, labels
-    
+
     else:
         lensA = [p.size(0) for p in protAs]
         lensB = [p.size(0) for p in protBs]
@@ -55,9 +69,15 @@ def collate_protein_batch(batch: list[tuple[torch.Tensor, torch.Tensor, torch.Te
 
         maskA = make_masks(lensA, batch_max_len, device)
         maskB = make_masks(lensB, batch_max_len, device)
-        masks = (maskA, maskB, combine_masks(maskA, maskB, device), combine_masks(maskB, maskA, device))
+        masks = (
+            maskA,
+            maskB,
+            combine_masks(maskA, maskB, device),
+            combine_masks(maskB, maskA, device),
+        )
 
         return protA_padded, protB_padded, labels, masks
+
 
 class PPIDataModule(pl.LightningDataModule):
     def __init__(self, config: DictConfig):
@@ -96,7 +116,9 @@ class PPIDataModule(pl.LightningDataModule):
             shuffle=True,
             num_workers=self.config.trainer.num_workers,
             pin_memory=True,
-            collate_fn=lambda batch: collate_protein_batch(batch, self.config.trainer.device, self.embedding_type),
+            collate_fn=lambda batch: collate_protein_batch(
+                batch, self.config.trainer.device, self.embedding_type
+            ),
         )
 
     def val_dataloader(self):
@@ -106,7 +128,9 @@ class PPIDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.trainer.num_workers,
             pin_memory=True,
-            collate_fn=lambda batch: collate_protein_batch(batch, self.config.trainer.device, self.embedding_type),
+            collate_fn=lambda batch: collate_protein_batch(
+                batch, self.config.trainer.device, self.embedding_type
+            ),
         )
 
     def test_dataloader(self):
@@ -116,15 +140,19 @@ class PPIDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config.trainer.num_workers,
             pin_memory=True,
-            collate_fn=lambda batch: collate_protein_batch(batch, self.config.trainer.device, self.embedding_type),
+            collate_fn=lambda batch: collate_protein_batch(
+                batch, self.config.trainer.device, self.embedding_type
+            ),
         )
-    
+
     def predict_dataloader(self):
         return DataLoader(
             self.predict_dataset,
-            batch_size=1
+            batch_size=1,
             shuffle=False,
             num_workers=self.config.trainer.num_workers,
             pin_memory=True,
-            collate_fn=lambda batch: collate_protein_batch(batch, self.config.trainer.device, self.embedding_type),
+            collate_fn=lambda batch: collate_protein_batch(
+                batch, self.config.trainer.device, self.embedding_type
+            ),
         )

@@ -5,6 +5,7 @@ from tuna.models.model_utils import make_linear_layer
 import warnings
 from omegaconf import DictConfig
 
+
 class MLP(nn.Module):
     def __init__(
         self,
@@ -13,7 +14,7 @@ class MLP(nn.Module):
         dropout: float,
         llgp: bool,
         spectral_norm: bool,
-        out_targets: int = 1,
+        out_targets: int,
         gp_config: DictConfig | None,
     ):
         super().__init__()
@@ -27,14 +28,14 @@ class MLP(nn.Module):
         if self.llgp and not self.spectral_norm:
             warnings.warn(
                 "It is recommended to use spectral normalization when llgp is True.",
-                UserWarning
+                UserWarning,
             )
 
-        self.fc1 = make_linear_layer(self.protein_dim*2, self.hid_dim, spectral_norm)
+        self.fc1 = make_linear_layer(self.protein_dim * 2, self.hid_dim, spectral_norm)
         self.fc2 = make_linear_layer(self.hid_dim, self.hid_dim, spectral_norm)
         self.relu = nn.ReLU()
         self.do = nn.Dropout(self.dropout)
-        
+
         if self.llgp:
             if gp_config is None:
                 raise ValueError("gp_config must be provided when llgp=True")
@@ -47,7 +48,9 @@ class MLP(nn.Module):
                 likelihood_function=gp_config.likelihood_function,
             )
         else:
-            self.output_layer = make_linear_layer(self.hid_dim, self.out_targets, self.spectral_norm)
+            self.output_layer = make_linear_layer(
+                self.hid_dim, self.out_targets, self.spectral_norm
+            )
 
         self._update_precision = False
         self._get_variance = False
@@ -58,13 +61,17 @@ class MLP(nn.Module):
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
 
-    def _set_llgp_mode(self, update_precision: bool = False, get_variance: bool = False):
+    def _set_llgp_mode(
+        self, update_precision: bool = False, get_variance: bool = False
+    ):
         if not self.llgp:
             return
         self._update_precision = update_precision
         self._get_variance = get_variance
 
-    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, proteinA: torch.Tensor, proteinB: torch.Tensor
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         concatenated = torch.cat((proteinA, proteinB), dim=1)
         x = self.fc1(concatenated)
         x = self.relu(x)
@@ -75,5 +82,7 @@ class MLP(nn.Module):
         x = self.do(x)
 
         if self.llgp:
-            return self.output_layer(x, update_precision=self._update_precision, get_var=self._get_variance)
+            return self.output_layer(
+                x, update_precision=self._update_precision, get_var=self._get_variance
+            )
         return self.output_layer(x)

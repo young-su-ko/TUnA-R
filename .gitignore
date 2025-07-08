@@ -4,3 +4,4 @@ slurm_outputs/
 .venv/
 .python-version
 checkpoints/
+.ruff_cache/

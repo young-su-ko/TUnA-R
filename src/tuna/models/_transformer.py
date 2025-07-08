@@ -6,6 +6,7 @@ from tuna.models.model_utils import make_linear_layer
 from omegaconf import DictConfig
 import warnings
 
+
 class Transformer(nn.Module):
     def __init__(
         self,
@@ -17,7 +18,7 @@ class Transformer(nn.Module):
         ff_dim: int,
         llgp: bool,
         spectral_norm: bool,
-        out_targets: int = 1,
+        out_targets: int,
         gp_config: DictConfig | None,
     ):
         super().__init__()
@@ -33,13 +34,13 @@ class Transformer(nn.Module):
         if self.llgp and not self.spectral_norm:
             warnings.warn(
                 "It is recommended to use spectral normalization when llgp is True.",
-                UserWarning
+                UserWarning,
             )
 
         if self.llgp:
             if gp_config is None:
                 raise ValueError("gp_config must be provided when llgp=True")
-            
+
             self.output_layer = VanillaRFFLayer(
                 in_features=self.hid_dim,
                 RFFs=gp_config.rff_features,
@@ -49,30 +50,57 @@ class Transformer(nn.Module):
                 likelihood_function=gp_config.likelihood_function,
             )
         else:
-            self.output_layer = make_linear_layer(self.hid_dim, self.out_targets, self.spectral_norm)
+            self.output_layer = make_linear_layer(
+                self.hid_dim, self.out_targets, self.spectral_norm
+            )
 
-        self.down_project = make_linear_layer(self.protein_dim, self.hid_dim, self.spectral_norm)
-        self.intra_encoder = Encoder(self.protein_dim, self.hid_dim, self.n_layers, self.n_heads, self.ff_dim, self.dropout, self.spectral_norm)
-        self.inter_encoder = Encoder(self.protein_dim, self.hid_dim, self.n_layers, self.n_heads, self.ff_dim, self.dropout, self.spectral_norm)
+        self.down_project = make_linear_layer(
+            self.protein_dim, self.hid_dim, self.spectral_norm
+        )
+        self.intra_encoder = Encoder(
+            self.protein_dim,
+            self.hid_dim,
+            self.n_layers,
+            self.n_heads,
+            self.ff_dim,
+            self.dropout,
+            self.spectral_norm,
+        )
+        self.inter_encoder = Encoder(
+            self.protein_dim,
+            self.hid_dim,
+            self.n_layers,
+            self.n_heads,
+            self.ff_dim,
+            self.dropout,
+            self.spectral_norm,
+        )
 
         self._update_precision = False
         self._get_variance = False
-        
+
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
 
-    def _set_llgp_mode(self, update_precision: bool = False, get_variance: bool = False):
+    def _set_llgp_mode(
+        self, update_precision: bool = False, get_variance: bool = False
+    ):
         if not self.llgp:
             return
         self._update_precision = update_precision
         self._get_variance = get_variance
 
-    def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor, masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        proteinA: torch.Tensor,
+        proteinB: torch.Tensor,
+        masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         maskA, maskB, maskAB, maskBA = masks
-        
+
         proteinA = self.down_project(proteinA)
         proteinB = self.down_project(proteinB)
 
@@ -81,12 +109,16 @@ class Transformer(nn.Module):
 
         proteinAB = torch.cat((proteinA, proteinB), dim=1)
         proteinBA = torch.cat((proteinB, proteinA), dim=1)
-        
+
         proteinAB = self.inter_encoder(proteinAB, maskAB)
         proteinBA = self.inter_encoder(proteinBA, maskBA)
 
         ppi_feature, _ = torch.max(torch.cat((proteinAB, proteinBA), dim=-1), dim=1)
 
         if self.llgp:
-            return self.output_layer(ppi_feature, update_precision=self._update_precision, get_var=self._get_variance)
+            return self.output_layer(
+                ppi_feature,
+                update_precision=self._update_precision,
+                get_var=self._get_variance,
+            )
         return self.output_layer(ppi_feature)
