@@ -24,10 +24,3 @@ dependencies = [
 uncertaintyawaredeeplearn = { git = "https://github.com/jlparkI/uncertaintyAwareDeepLearn", rev = "0.0.5" }
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.isort]
-profile = "black"
-line_length = 88
-multi_line_output = 3
-include_trailing_comma = true
-known_first_party = ["tuna"]
