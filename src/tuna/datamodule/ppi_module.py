@@ -1,8 +1,10 @@
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader, Dataset
 import torch
-from tuna.datamodule.datamodule_utils import make_masks, pad_batch, combine_masks
 from omegaconf import DictConfig
+from torch.utils.data import DataLoader, Dataset
+
+from tuna.datamodule.datamodule_utils import combine_masks, make_masks, pad_batch
+
 # TODO: add docstrings in numpy format
 
 

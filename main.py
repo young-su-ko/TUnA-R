@@ -1,33 +1,33 @@
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.loggers import WandbLogger
 import hydra
-from omegaconf import DictConfig
+import pytorch_lightning as pl
 import wandb
 from hydra.utils import instantiate
+from omegaconf import DictConfig
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
+from pytorch_lightning.loggers import WandbLogger
+
 from tuna.datamodule.ppi_module import PPIDataModule
+
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: DictConfig):
     pl.seed_everything(cfg.seed)
-    
-    wandb_logger = WandbLogger(
-        project=cfg.wandb.project
-    )
-    
+
+    wandb_logger = WandbLogger(project=cfg.wandb.project)
+
     callbacks = [
         ModelCheckpoint(
             dirpath="checkpoints",
             filename=f"{cfg.model}-{cfg.dataset}-{{epoch:02d}}-{{val_loss:.2f}}",
             monitor="val_loss",
             mode="min",
-            save_top_k=1
+            save_top_k=1,
         ),
         LearningRateMonitor(logging_interval="step"),
     ]
 
     lit_module = instantiate(cfg.module)
-    
+
     trainer = pl.Trainer(
         max_epochs=cfg.trainer.max_epochs,
         learning_rate=cfg.trainer.learning_rate,
@@ -38,7 +38,7 @@ def main(cfg: DictConfig):
         logger=wandb_logger,
         callbacks=callbacks,
     )
-    
+
     data_module = PPIDataModule(
         train_file=cfg.dataset.paths.train,
         val_file=cfg.dataset.paths.val,
@@ -51,11 +51,12 @@ def main(cfg: DictConfig):
         max_sequence_length=cfg.dataset.max_sequence_length,
         class_weights=cfg.dataset.class_weights,
     )
-    
+
     trainer.fit(lit_module, data_module)
     trainer.test(lit_module, data_module)
-    
+
     wandb.finish()
+
 
 if __name__ == "__main__":
     main()

@@ -1,19 +1,24 @@
+import math
+
 import torch
 import torch.nn as nn
-import math
+
 
 def mean_field_average(logits: torch.Tensor, variance: torch.Tensor) -> torch.Tensor:
     """
-    When we have the variance of the logits during inference, we 
+    When we have the variance of the logits during inference, we
     adjust the logits to get a better estimate of the probability.
     See https://arxiv.org/abs/2006.10108 for more details.
     """
-    adjusted_score = logits / torch.sqrt(1. + (math.pi /8.)*variance)
+    adjusted_score = logits / torch.sqrt(1.0 + (math.pi / 8.0) * variance)
     adjusted_score = torch.sigmoid(adjusted_score).squeeze()
-    
+
     return adjusted_score
 
-def make_linear_layer(in_features: int, out_features: int, spectral_norm: bool = True) -> nn.Linear:
+
+def make_linear_layer(
+    in_features: int, out_features: int, spectral_norm: bool = True
+) -> nn.Linear:
     """
     This is a helper function to build linear layers with the option to use spectral norm.
     """
@@ -21,6 +26,7 @@ def make_linear_layer(in_features: int, out_features: int, spectral_norm: bool =
     if spectral_norm:
         layer = spectral_norm(layer)
     return layer
+
 
 def is_llgp(model: nn.Module) -> bool:
     """

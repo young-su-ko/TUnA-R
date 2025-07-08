@@ -1,7 +1,8 @@
 import torch
-from tuna.pl_modules.base_module import BaseModule
-from tuna.models.model_utils import is_llgp, mean_field_average
 from hydra.utils import instantiate
+
+from tuna.models.model_utils import is_llgp, mean_field_average
+from tuna.pl_modules.base_module import BaseModule
 
 
 class LitTransformer(BaseModule):

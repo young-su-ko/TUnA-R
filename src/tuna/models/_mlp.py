@@ -1,9 +1,11 @@
+import warnings
+
 import torch
 import torch.nn as nn
-from uncertaintyAwareDeepLearn import VanillaRFFLayer
-from tuna.models.model_utils import make_linear_layer
-import warnings
 from omegaconf import DictConfig
+from uncertaintyAwareDeepLearn import VanillaRFFLayer
+
+from tuna.models.model_utils import make_linear_layer
 
 
 class MLP(nn.Module):

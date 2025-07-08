@@ -1,10 +1,12 @@
+import warnings
+
 import torch
 import torch.nn as nn
+from omegaconf import DictConfig
 from uncertaintyAwareDeepLearn import VanillaRFFLayer
+
 from tuna.layers._transformer import Encoder
 from tuna.models.model_utils import make_linear_layer
-from omegaconf import DictConfig
-import warnings
 
 
 class Transformer(nn.Module):
