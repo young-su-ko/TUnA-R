@@ -1,9 +1,6 @@
-defaults:
-  - base_model
-  - _self_
+_target_: tuna.models._transformer.Transformer
 
 type: t-fc
-
 architecture:
   protein_dim: 640
   hid_dim: 64
@@ -14,15 +11,3 @@ architecture:
   out_targets: 1
   spectral_norm: False
   llgp: False
-
-
-training:
-  batch_size: 16
-  learning_rate: 0.0001
-  weight_decay: 0.00001
-  max_epochs: 5
-  
-  scheduler:
-    step_size: 2
-    gamma: 0.93
-  

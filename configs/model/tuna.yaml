@@ -1,8 +1,4 @@
-defaults:
-  - base_model
-  - _self_
-
-type: tuna
+_target_: tuna.models._transformer.Transformer
 
 architecture:
   protein_dim: 640
@@ -14,18 +10,9 @@ architecture:
   llgp: True
   spectral_norm: True
   out_targets: 1
-  rff_features: 4096
-  gp_cov_momentum: -1
-  gp_ridge_penalty: 1
-  likelihood_function: "binary_logistic"
 
-training:
-  batch_size: 16
-  learning_rate: 0.0001
-  weight_decay: 0.00001
-  max_epochs: 14
-  
-  scheduler:
-    step_size: 2
-    gamma: 0.93
-  
+  gp_config:
+    rff_features: 4096
+    gp_cov_momentum: -1
+    gp_ridge_penalty: 1
+    likelihood_function: "binary_logistic"

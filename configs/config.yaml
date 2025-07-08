@@ -1,5 +1,7 @@
 defaults:
-  - model: None # options [tuna, tuna-gp, esm-mlp, esm-gp]
+  - module: None # options [transformer, mlp]
+  - model: None # options [tuna, t-fc, esm-mlp, esm-gp]
+  - override module/model_cfg: ${model}
   - dataset: None # options [gold-standard, mouse, fly, worm, yeast, ecoli]
   - _self_
 
@@ -9,6 +11,7 @@ wandb:
   project: "TUnA-R"
 
 trainer:
+  max_epochs: None
   accelerator: auto
   devices: auto
   precision: auto

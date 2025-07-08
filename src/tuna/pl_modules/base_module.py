@@ -2,16 +2,14 @@ import pytorch_lightning as pl
 import torch
 import torchmetrics
 from torch.optim import Adam, lr_scheduler
+from torch_optimizer import Lookahead
 
 class BaseModule(pl.LightningModule):
-    # These are helper functions to check the current state of the training,
-    # Used for the last layer gaussian process, not used for T-FC and ESM-MLP.
     def __init__(self, config):
         super().__init__()
         self.config = config
-
+    
     def _is_last_epoch(self) -> bool:
-        # Returns True if this is the last epoch
         return (self.current_epoch == self.trainer.max_epochs - 1)
 
     def _log_binary_classification_metrics(self, y_true: torch.Tensor, y_pred: torch.Tensor, y_prob: torch.Tensor, prefix: str = ""):
@@ -35,7 +33,38 @@ class BaseModule(pl.LightningModule):
         for k, v in metrics.items():
             self.log(k, v, prog_bar=True, on_epoch=True, on_step=False)
 
+    def _separate_weights_and_biases(self):
+        weight_p, bias_p = [], []
+        for name, param in self.named_parameters():
+            if not param.requires_grad:
+                continue
+            if "bias" in name:
+                bias_p.append(param)
+            else:
+                weight_p.append(param)
+        return weight_p, bias_p
+
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=self.config.learning_rate)
+        lr = self.config.learning_rate
+        weight_decay = self.config.weight_decay
+
+        weight_p, bias_p = self._separate_weights_and_biases()
+
+        optimizer_inner = Adam(
+            [
+                {'params': weight_p, 'weight_decay': weight_decay},
+                {'params': bias_p, 'weight_decay': 0.0}
+            ],
+            lr=lr
+        )
+
+        optimizer = Lookahead(optimizer_inner, alpha=0.8, k=5)
         scheduler = lr_scheduler.StepLR(optimizer, step_size=self.config.step_size, gamma=self.config.gamma)
-        return {"optimizer": optimizer, "lr_scheduler": scheduler}
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "epoch",
+                "frequency": 1
+            }
+        }

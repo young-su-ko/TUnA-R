@@ -11,6 +11,8 @@ dependencies = [
     "lightning>=2.5.2",
     "pytest>=8.4.1",
     "torch>=2.7.1",
+    "torch-optimizer>=0.3.0",
+    "torchmetrics>=1.7.3",
     "uncertaintyawaredeeplearn",
     "wandb>=0.20.1",
 ]

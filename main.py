@@ -1,15 +1,10 @@
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
 import hydra
 from omegaconf import DictConfig
-import torch
 import wandb
-from torch.optim.lr_scheduler import StepLR
-from torch.optim import Adam
-
-from tuna.pl_modules.lit_mlp import LitMLP
-from tuna.pl_modules.lit_tuna import LitTUnA
+from hydra.utils import instantiate
 from tuna.datamodule.ppi_module import PPIDataModule
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
@@ -17,37 +12,26 @@ def main(cfg: DictConfig):
     pl.seed_everything(cfg.seed)
     
     wandb_logger = WandbLogger(
-        project=cfg.wandb.project,
-        entity=cfg.wandb.entity,
-        mode=cfg.wandb.mode,
+        project=cfg.wandb.project
     )
     
-    # Callbacks
     callbacks = [
         ModelCheckpoint(
             dirpath="checkpoints",
-            filename=f"{cfg.model.type}-{cfg.dataset.name}-{{epoch:02d}}-{{val_loss:.2f}}",
+            filename=f"{cfg.model}-{cfg.dataset}-{{epoch:02d}}-{{val_loss:.2f}}",
             monitor="val_loss",
             mode="min",
             save_top_k=1
         ),
         LearningRateMonitor(logging_interval="step"),
-        EarlyStopping(
-            monitor="val_loss",
-            patience=cfg.model.training.early_stopping_patience,
-            mode="min"
-        )
     ]
 
-    if cfg.model.type == "tuna" or cfg.model.type == "t-fc":
-        model = LitTUnA(cfg.model)
-    elif cfg.model.type == "esm-mlp" or cfg.model.type == "esm-gp":
-        model = LitMLP(cfg.model)
-    else:
-        raise ValueError(f"Model type {cfg.model.type} not supported")
-
+    lit_module = instantiate(cfg.module)
+    
     trainer = pl.Trainer(
-        max_epochs=cfg.model.trainer.max_epochs,
+        max_epochs=cfg.trainer.max_epochs,
+        learning_rate=cfg.trainer.learning_rate,
+        weight_decay=cfg.trainer.weight_decay,
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         precision=cfg.trainer.precision,
@@ -68,8 +52,8 @@ def main(cfg: DictConfig):
         class_weights=cfg.dataset.class_weights,
     )
     
-    trainer.fit(model, data_module)
-    trainer.test(model, data_module)
+    trainer.fit(lit_module, data_module)
+    trainer.test(lit_module, data_module)
     
     wandb.finish()
 
