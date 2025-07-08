@@ -24,3 +24,6 @@ dependencies = [
 uncertaintyawaredeeplearn = { git = "https://github.com/jlparkI/uncertaintyAwareDeepLearn", rev = "0.0.5" }
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+extend-select = ["E", "F", "I"]
