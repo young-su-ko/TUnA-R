@@ -26,4 +26,5 @@ uncertaintyawaredeeplearn = { git = "https://github.com/jlparkI/uncertaintyAware
 where = ["src"]
 
 [tool.ruff]
-extend-select = ["E", "F", "I"]
+ignore = ["E501"]
+lint.extend-select = ["E", "F", "I"]

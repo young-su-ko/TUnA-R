@@ -10,10 +10,11 @@ def mean_field_average(logits: torch.Tensor, variance: torch.Tensor) -> torch.Te
     adjust the logits to get a better estimate of the probability.
     See https://arxiv.org/abs/2006.10108 for more details.
     """
-    adjusted_score = logits / torch.sqrt(1.0 + (math.pi / 8.0) * variance)
-    adjusted_score = torch.sigmoid(adjusted_score).squeeze()
+    adjusted_logits = logits / torch.sqrt(1.0 + (math.pi / 8.0) * variance)
+    # right now we return logits
+    # adjusted_score = torch.sigmoid(adjusted_score).squeeze()
 
-    return adjusted_score
+    return adjusted_logits
 
 
 def make_linear_layer(
