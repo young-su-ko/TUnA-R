@@ -11,18 +11,29 @@ class PPIDataset(Dataset):
         self.embeddings = embeddings
 
         self.data = []
+        # Read a tsv file with columns: proteinA, proteinB, interaction
+        # Not sure if this is best way to do this..
+        # Either way, it will have to be some reading of (proteinA, proteinB, interaction)
+        # Then map names to embeddings
         with open(interaction_file, "r") as f:
             for line in f:
                 proteinA, proteinB, interaction = line.strip().split("\t")
+                # The main concern is the tsv file can be fragile
+                # If one tab is missing, the line will be split incorrectly
+
+                # Interaction is a string, convert to int
+                interaction = int(interaction)
                 self.data.append((proteinA, proteinB, interaction))
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        # Map names to embeddings
         proteinA, proteinB, interaction = self.data[idx]
         proteinA_embedding = self.embeddings[proteinA]
         proteinB_embedding = self.embeddings[proteinB]
+        interaction = torch.tensor(interaction, dtype=torch.long)
 
         return proteinA_embedding, proteinB_embedding, interaction
 
@@ -31,12 +42,12 @@ def collate_protein_batch(
     batch: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
     embedding_type: str = "residue",
 ) -> (
-    tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor]  # when embedding_type == "protein"
     | tuple[
-        torch.Tensor,
-        torch.Tensor,
-        torch.Tensor,
-        tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+        torch.Tensor,  # protA_padded
+        torch.Tensor,  # protB_padded
+        torch.Tensor,  # labels
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],  # masks
     ]
 ):
     """
@@ -49,7 +60,6 @@ def collate_protein_batch(
         - For 'residue': (protA_padded, protB_padded, labels, masks)
     """
     protAs, protBs, labels = zip(*batch)
-    labels = torch.tensor(labels, dtype=torch.long)
 
     if embedding_type == "protein":
         # Pool over sequence length dimension (dim=0)
@@ -63,19 +73,13 @@ def collate_protein_batch(
         lensB = [p.size(0) for p in protBs]
         batch_max_len = max(max(lensA), max(lensB))
 
-        # Pad each sequence
-        padded_protAs = []
-        padded_protBs = []
-        for prot in protAs:
-            padded = pad_batch(prot, batch_max_len)
-            padded_protAs.append(padded)
-        for prot in protBs:
-            padded = pad_batch(prot, batch_max_len)
-            padded_protBs.append(padded)
+        padded_protAs = torch.empty(len(protAs), batch_max_len, protAs[0].size(1))
+        padded_protBs = torch.empty(len(protBs), batch_max_len, protBs[0].size(1))
 
-        # Stack padded sequences
-        protA_padded = torch.stack(padded_protAs)
-        protB_padded = torch.stack(padded_protBs)
+        for i, prot in enumerate(protAs):
+            padded_protAs[i, : lensA[i], :] = pad_batch(prot, batch_max_len)
+        for i, prot in enumerate(protBs):
+            padded_protBs[i, : lensB[i], :] = pad_batch(prot, batch_max_len)
 
         # Create masks
         maskA = make_masks(lensA, batch_max_len)
@@ -87,7 +91,7 @@ def collate_protein_batch(
             combine_masks(maskB, maskA),
         )
 
-        return protA_padded, protB_padded, labels, masks
+        return padded_protAs, padded_protBs, labels, masks
 
 
 class PPIDataModule(pl.LightningDataModule):
@@ -113,11 +117,6 @@ class PPIDataModule(pl.LightningDataModule):
         elif stage == "test":
             self.test_dataset = PPIDataset(
                 self.config.dataset.paths.test,
-                self.embeddings,
-            )
-        elif stage == "predict":
-            self.predict_dataset = PPIDataset(
-                self.config.dataset.paths.predict,
                 self.embeddings,
             )
 
