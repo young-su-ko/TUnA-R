@@ -1,8 +1,10 @@
 defaults:
-  - module: None # options [transformer, mlp]
-  - model: None # options [tuna, t-fc, esm-mlp, esm-gp]
-  - override module/model_cfg: ${model}
-  - dataset: None # options [gold-standard, mouse, fly, worm, yeast, ecoli]
+  # Available options: [transformer, mlp]
+  - pl_module: ???
+  # Available options: [tuna, t-fc, esm-mlp, esm-gp]
+  - model: ???
+  # Available options: [gold-standard, mouse, fly, worm, yeast, ecoli]
+  - dataset: ???
   - _self_
 
 seed: 42
@@ -14,10 +16,11 @@ trainer:
   max_epochs: None
   accelerator: auto
   devices: auto
-  precision: auto
+  precision: 32
 
 datamodule:
+  batch_size: 16
   max_sequence_length: 512
-  num_workers: 4
+  num_workers: 2
   pin_memory: True
   persistent_workers: True

@@ -12,27 +12,29 @@ class TransformerBlock(nn.Module):
         ffn_dim: int,
         n_heads: int,
         dropout: float,
-        spectral_norm: bool,
+        use_spectral_norm: bool,
     ):
         super().__init__()
         self.hid_dim = hid_dim
         self.ffn_dim = ffn_dim
         self.n_heads = n_heads
         self.dropout = dropout
-        self.spectral_norm = spectral_norm
+        self.use_spectral_norm = use_spectral_norm
 
-        self.attention_layer_norm = nn.LayerNorm(hid_dim)
-        self.attention = MultiHeadAttention(hid_dim, n_heads, dropout, spectral_norm)
-        self.do = nn.Dropout(dropout)
+        self.attention_layer_norm = nn.LayerNorm(self.hid_dim)
+        self.attention = MultiHeadAttention(
+            self.hid_dim, self.n_heads, self.dropout, self.use_spectral_norm
+        )
+        self.do = nn.Dropout(self.dropout)
 
         self.ffn = nn.Sequential(
-            make_linear_layer(hid_dim, ffn_dim, spectral_norm),
+            make_linear_layer(self.hid_dim, self.ffn_dim, self.use_spectral_norm),
             nn.SiLU(),
-            make_linear_layer(ffn_dim, hid_dim, spectral_norm),
+            make_linear_layer(self.ffn_dim, self.hid_dim, self.use_spectral_norm),
         )
 
-        self.ffn_layer_norm = nn.LayerNorm(hid_dim)
-        self.output_layer_norm = nn.LayerNorm(hid_dim)
+        self.ffn_layer_norm = nn.LayerNorm(self.hid_dim)
+        self.output_layer_norm = nn.LayerNorm(self.hid_dim)
 
     def forward(
         self, x: torch.Tensor, mask: torch.Tensor | None = None
@@ -60,7 +62,7 @@ class Encoder(nn.Module):
         n_heads: int,
         ffn_dim: int,
         dropout: float,
-        spectral_norm: bool,
+        use_spectral_norm: bool,
     ):
         super().__init__()
         self.hid_dim = hid_dim
@@ -68,12 +70,18 @@ class Encoder(nn.Module):
         self.n_heads = n_heads
         self.ffn_dim = ffn_dim
         self.dropout = dropout
-        self.spectral_norm = spectral_norm
+        self.use_spectral_norm = use_spectral_norm
 
         self.layers = nn.ModuleList(
             [
-                TransformerBlock(hid_dim, ffn_dim, n_heads, dropout, spectral_norm)
-                for _ in range(n_layers)
+                TransformerBlock(
+                    self.hid_dim,
+                    self.ffn_dim,
+                    self.n_heads,
+                    self.dropout,
+                    self.use_spectral_norm,
+                )
+                for _ in range(self.n_layers)
             ]
         )
 

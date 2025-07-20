@@ -10,7 +10,7 @@ from tuna.pl_modules.llgp_utils import LLGPMode, set_llgp_mode
 class LitMLP(BaseModule):
     def __init__(self, config):
         super().__init__(config)
-        self.model = instantiate(config.model_cfg)
+        self.model = instantiate(config.model)
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
 

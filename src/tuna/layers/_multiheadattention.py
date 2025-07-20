@@ -7,19 +7,23 @@ from tuna.models.model_utils import make_linear_layer
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, hid_dim: int, n_heads: int, dropout: float, spectral_norm: bool):
+    def __init__(
+        self, hid_dim: int, n_heads: int, dropout: float, use_spectral_norm: bool
+    ):
         super().__init__()
         self.hid_dim = hid_dim
         self.n_heads = n_heads
         self.dropout = dropout
-        self.spectral_norm = spectral_norm
+        self.use_spectral_norm = use_spectral_norm
         self.head_dim = hid_dim // n_heads
         assert hid_dim % n_heads == 0, "hid_dim must be divisible by n_heads"
 
-        self.q = make_linear_layer(hid_dim, hid_dim, spectral_norm)
-        self.k = make_linear_layer(hid_dim, hid_dim, spectral_norm)
-        self.v = make_linear_layer(hid_dim, hid_dim, spectral_norm)
-        self.output = make_linear_layer(hid_dim, hid_dim, spectral_norm)
+        self.q = make_linear_layer(self.hid_dim, self.hid_dim, self.use_spectral_norm)
+        self.k = make_linear_layer(self.hid_dim, self.hid_dim, self.use_spectral_norm)
+        self.v = make_linear_layer(self.hid_dim, self.hid_dim, self.use_spectral_norm)
+        self.output = make_linear_layer(
+            self.hid_dim, self.hid_dim, self.use_spectral_norm
+        )
 
     def forward(
         self, x: torch.Tensor, mask: torch.Tensor | None = None

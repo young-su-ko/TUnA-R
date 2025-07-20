@@ -2,6 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
+from torch.nn.utils import spectral_norm
 
 
 def mean_field_average(logits: torch.Tensor, variance: torch.Tensor) -> torch.Tensor:
@@ -18,13 +19,13 @@ def mean_field_average(logits: torch.Tensor, variance: torch.Tensor) -> torch.Te
 
 
 def make_linear_layer(
-    in_features: int, out_features: int, spectral_norm: bool = True
+    in_features: int, out_features: int, use_spectral_norm: bool = True
 ) -> nn.Linear:
     """
     This is a helper function to build linear layers with the option to use spectral norm.
     """
     layer = nn.Linear(in_features, out_features)
-    if spectral_norm:
+    if use_spectral_norm:
         layer = spectral_norm(layer)
     return layer
 

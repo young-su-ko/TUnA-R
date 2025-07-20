@@ -2,7 +2,7 @@
 name: gold-standard
 
 paths:
-  train: "/new-stg/home/young/TUnA-R/data/ppi/train.fasta"
-  val: "/new-stg/home/young/TUnA-R/data/ppi/val.fasta"
-  test: "/new-stg/home/young/TUnA-R/data/ppi/test.fasta"
-  embeddings: "/new-stg/home/young/TUnA-R/data/ppi/embeddings.pt"
+  train: "/new-stg/home/young/1_tuna_related/TUnA/data/processed/bernett/Intra1_interaction_1500_or_less.tsv"
+  val: "/new-stg/home/young/1_tuna_related/TUnA/data/processed/bernett/Intra0_interaction_1500_or_less.tsv"
+  test: "/new-stg/home/young/1_tuna_related/TUnA/data/processed/bernett/Intra2_interaction_1500_or_less.tsv"
+  embeddings: "/new-stg/home/young/1_tuna_related/TUnA/data/embedded/bernett/protein_dictionary_1500_or_less.pt"

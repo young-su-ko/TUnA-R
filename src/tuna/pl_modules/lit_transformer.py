@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from hydra.utils import instantiate
+from omegaconf import DictConfig
 
 from tuna.models.model_utils import is_llgp, mean_field_average
 from tuna.pl_modules.base_module import BaseModule
@@ -8,9 +9,9 @@ from tuna.pl_modules.llgp_utils import LLGPMode, set_llgp_mode
 
 
 class LitTransformer(BaseModule):
-    def __init__(self, config):
+    def __init__(self, config: DictConfig):
         super().__init__(config)
-        self.model = instantiate(config.model_cfg)
+        self.model = instantiate(config.model)
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
 

@@ -5,7 +5,7 @@ import torch.nn as nn
 from omegaconf import DictConfig
 from uncertaintyAwareDeepLearn import VanillaRFFLayer
 
-from tuna.layers._transformer import Encoder
+from tuna.layers._transformer_block import Encoder
 from tuna.models.model_utils import make_linear_layer
 
 
@@ -19,7 +19,7 @@ class Transformer(nn.Module):
         n_heads: int,
         ff_dim: int,
         llgp: bool,
-        spectral_norm: bool,
+        use_spectral_norm: bool,
         out_targets: int,
         gp_config: DictConfig | None,
     ):
@@ -31,51 +31,51 @@ class Transformer(nn.Module):
         self.n_heads = n_heads
         self.ff_dim = ff_dim
         self.llgp = llgp
-        self.spectral_norm = spectral_norm
+        self.use_spectral_norm = use_spectral_norm
+        self.out_targets = out_targets
+        self.gp_config = gp_config
 
-        if self.llgp and not self.spectral_norm:
+        if self.llgp and not self.use_spectral_norm:
             warnings.warn(
                 "It is recommended to use spectral normalization when llgp is True.",
                 UserWarning,
             )
 
         if self.llgp:
-            if gp_config is None:
+            if self.gp_config is None:
                 raise ValueError("gp_config must be provided when llgp=True")
 
             self.output_layer = VanillaRFFLayer(
                 in_features=self.hid_dim,
-                RFFs=gp_config.rff_features,
+                RFFs=self.gp_config.rff_features,
                 out_targets=self.out_targets,
-                gp_cov_momentum=gp_config.gp_cov_momentum,
-                gp_ridge_penalty=gp_config.gp_ridge_penalty,
-                likelihood_function=gp_config.likelihood_function,
+                gp_cov_momentum=self.gp_config.gp_cov_momentum,
+                gp_ridge_penalty=self.gp_config.gp_ridge_penalty,
+                likelihood=self.gp_config.likelihood,
             )
         else:
             self.output_layer = make_linear_layer(
-                self.hid_dim, self.out_targets, self.spectral_norm
+                self.hid_dim, self.out_targets, use_spectral_norm=self.use_spectral_norm
             )
 
         self.down_project = make_linear_layer(
-            self.protein_dim, self.hid_dim, self.spectral_norm
+            self.protein_dim, self.hid_dim, use_spectral_norm=self.use_spectral_norm
         )
         self.intra_encoder = Encoder(
-            self.protein_dim,
             self.hid_dim,
             self.n_layers,
             self.n_heads,
             self.ff_dim,
             self.dropout,
-            self.spectral_norm,
+            self.use_spectral_norm,
         )
         self.inter_encoder = Encoder(
-            self.protein_dim,
             self.hid_dim,
             self.n_layers,
             self.n_heads,
             self.ff_dim,
             self.dropout,
-            self.spectral_norm,
+            self.use_spectral_norm,
         )
 
         self._update_precision = False

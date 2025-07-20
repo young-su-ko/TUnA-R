@@ -1,11 +1,11 @@
 import hydra
 import pytorch_lightning as pl
-import wandb
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
+import wandb
 from tuna.datamodule.ppi_module import PPIDataModule
 
 
@@ -26,12 +26,10 @@ def main(cfg: DictConfig):
         LearningRateMonitor(logging_interval="step"),
     ]
 
-    lit_module = instantiate(cfg.module)
+    lit_module = instantiate(cfg.pl_module)
 
     trainer = pl.Trainer(
         max_epochs=cfg.trainer.max_epochs,
-        learning_rate=cfg.trainer.learning_rate,
-        weight_decay=cfg.trainer.weight_decay,
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         precision=cfg.trainer.precision,
@@ -39,18 +37,7 @@ def main(cfg: DictConfig):
         callbacks=callbacks,
     )
 
-    data_module = PPIDataModule(
-        train_file=cfg.dataset.paths.train,
-        val_file=cfg.dataset.paths.val,
-        test_file=cfg.dataset.paths.test,
-        embedding_file=cfg.dataset.paths.embeddings,
-        batch_size=cfg.datamodule.batch_size,
-        num_workers=cfg.datamodule.num_workers,
-        pin_memory=cfg.datamodule.pin_memory,
-        persistent_workers=cfg.datamodule.persistent_workers,
-        max_sequence_length=cfg.dataset.max_sequence_length,
-        class_weights=cfg.dataset.class_weights,
-    )
+    data_module = PPIDataModule(config=cfg)
 
     trainer.fit(lit_module, data_module)
     trainer.test(lit_module, data_module)

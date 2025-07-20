@@ -6,3 +6,4 @@ TODO
 - run with gp / without gp
 - ~~add in adam + lookahead~~
 - ~~split weights and biases (?)~~
+

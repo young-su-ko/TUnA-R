@@ -5,3 +5,8 @@ slurm_outputs/
 .python-version
 checkpoints/
 .ruff_cache/
+*.sh
+outputs/
+__pycache__/
+/tests
+/wandb

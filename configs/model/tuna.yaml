@@ -1,18 +1,17 @@
 _target_: tuna.models._transformer.Transformer
 
-architecture:
-  protein_dim: 640
-  hid_dim: 64
-  ff_dim: 256
-  n_layers: 1
-  n_heads: 8
-  dropout: 0.2
-  llgp: True
-  spectral_norm: True
-  out_targets: 1
+protein_dim: 640
+hid_dim: 64
+ff_dim: 256
+n_layers: 1
+n_heads: 8
+dropout: 0.2
+llgp: True
+use_spectral_norm: True
+out_targets: 1
 
-  gp_config:
-    rff_features: 4096
-    gp_cov_momentum: -1
-    gp_ridge_penalty: 1
-    likelihood_function: "binary_logistic"
+gp_config:
+  rff_features: 4096
+  gp_cov_momentum: -1
+  gp_ridge_penalty: 1
+  likelihood: "binary_logistic"
