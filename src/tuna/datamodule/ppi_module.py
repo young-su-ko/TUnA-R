@@ -26,8 +26,7 @@ class PPIDataset(Dataset):
                 # If one tab is missing, the line will be split incorrectly
 
                 # Interaction is a string, convert to int
-                interaction = int(interaction)
-                self.data.append((proteinA, proteinB, interaction))
+                self.data.append((proteinA, proteinB, int(interaction)))
 
     def __len__(self):
         return len(self.data)
@@ -69,6 +68,7 @@ def collate_protein_batch(
         # Pool over sequence length dimension (dim=0)
         protA_pooled = torch.stack([p.mean(dim=0) for p in protAs])
         protB_pooled = torch.stack([p.mean(dim=0) for p in protBs])
+        labels = torch.stack(labels)
         return protA_pooled, protB_pooled, labels
 
     else:
@@ -80,10 +80,8 @@ def collate_protein_batch(
         padded_protAs = torch.empty(len(protAs), batch_max_len, protAs[0].size(1))
         padded_protBs = torch.empty(len(protBs), batch_max_len, protBs[0].size(1))
 
-        for i, prot in enumerate(protAs):
-            padded_protAs[i, : lensA[i], :] = pad_batch(prot, batch_max_len)
-        for i, prot in enumerate(protBs):
-            padded_protBs[i, : lensB[i], :] = pad_batch(prot, batch_max_len)
+        padded_protAs = pad_batch(protAs, batch_max_len)
+        padded_protBs = pad_batch(protBs, batch_max_len)
 
         # Create masks
         maskA = make_masks(lensA, batch_max_len)
