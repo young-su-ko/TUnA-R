@@ -5,7 +5,12 @@ import torch
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader, Dataset
 
-from tuna.datamodule.datamodule_utils import combine_masks, make_masks, pad_batch
+from tuna.datamodule.datamodule_utils import (
+    combine_masks,
+    make_masks,
+    pad_batch,
+    resolve_embedding_type,
+)
 
 
 class PPIDataset(Dataset):
@@ -63,12 +68,12 @@ def collate_protein_batch(
         - For 'residue': (protA_padded, protB_padded, labels, masks)
     """
     protAs, protBs, labels = zip(*batch)
+    labels = torch.stack(labels)
 
     if embedding_type == "protein":
         # Pool over sequence length dimension (dim=0)
         protA_pooled = torch.stack([p.mean(dim=0) for p in protAs])
         protB_pooled = torch.stack([p.mean(dim=0) for p in protBs])
-        labels = torch.stack(labels)
         return protA_pooled, protB_pooled, labels
 
     else:
@@ -76,9 +81,6 @@ def collate_protein_batch(
         lensA = [p.size(0) for p in protAs]
         lensB = [p.size(0) for p in protBs]
         batch_max_len = max(max(lensA), max(lensB))
-
-        padded_protAs = torch.empty(len(protAs), batch_max_len, protAs[0].size(1))
-        padded_protBs = torch.empty(len(protBs), batch_max_len, protBs[0].size(1))
 
         padded_protAs = pad_batch(protAs, batch_max_len)
         padded_protBs = pad_batch(protBs, batch_max_len)
@@ -100,10 +102,7 @@ class PPIDataModule(pl.LightningDataModule):
     def __init__(self, config: DictConfig):
         super().__init__()
         self.config = config
-        if self.config.model == "tuna" or self.config.model == "tfc":
-            self.embedding_type = "residue"
-        elif self.config.model == "esm_gp" or self.config.model == "esm_mlp":
-            self.embedding_type = "protein"
+        self.embedding_type = resolve_embedding_type(self.config.model)
 
         self.embeddings_path = Path(self.config.dataset.paths.embeddings)
         self.train_path = Path(self.config.dataset.paths.train)
