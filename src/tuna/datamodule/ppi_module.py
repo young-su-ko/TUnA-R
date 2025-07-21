@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig
@@ -7,7 +9,9 @@ from tuna.datamodule.datamodule_utils import combine_masks, make_masks, pad_batc
 
 
 class PPIDataset(Dataset):
-    def __init__(self, interaction_file: str, embeddings: dict[str, torch.Tensor]):
+    def __init__(
+        self, interaction_file_path: Path, embeddings: dict[str, torch.Tensor]
+    ):
         self.embeddings = embeddings
 
         self.data = []
@@ -15,7 +19,7 @@ class PPIDataset(Dataset):
         # Not sure if this is best way to do this..
         # Either way, it will have to be some reading of (proteinA, proteinB, interaction)
         # Then map names to embeddings
-        with open(interaction_file, "r") as f:
+        with open(interaction_file_path, "r") as f:
             for line in f:
                 proteinA, proteinB, interaction = line.strip().split("\t")
                 # The main concern is the tsv file can be fragile
@@ -103,20 +107,25 @@ class PPIDataModule(pl.LightningDataModule):
         elif self.config.model == "esm_gp" or self.config.model == "esm_mlp":
             self.embedding_type = "protein"
 
+        self.embeddings_path = Path(self.config.dataset.paths.embeddings)
+        self.train_path = Path(self.config.dataset.paths.train)
+        self.val_path = Path(self.config.dataset.paths.val)
+        self.test_path = Path(self.config.dataset.paths.test)
+
     def setup(self, stage: str):
-        self.embeddings = torch.load(self.config.dataset.paths.embeddings)
+        self.embeddings = torch.load(self.embeddings_path)
         if stage == "fit":
             self.train_dataset = PPIDataset(
-                self.config.dataset.paths.train,
+                self.train_path,
                 self.embeddings,
             )
             self.val_dataset = PPIDataset(
-                self.config.dataset.paths.val,
+                self.val_path,
                 self.embeddings,
             )
         elif stage == "test":
             self.test_dataset = PPIDataset(
-                self.config.dataset.paths.test,
+                self.test_path,
                 self.embeddings,
             )
 

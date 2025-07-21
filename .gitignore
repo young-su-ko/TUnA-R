@@ -8,5 +8,6 @@ checkpoints/
 *.sh
 outputs/
 __pycache__/
-/tests
-/wandb
+tests/
+wandb/
+embeddings/
