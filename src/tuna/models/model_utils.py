@@ -2,7 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
-from torch.nn.utils import spectral_norm
+from torch.nn.utils.parametrizations import spectral_norm
 
 
 def mean_field_average(logits: torch.Tensor, variance: torch.Tensor) -> torch.Tensor:
