@@ -27,14 +27,14 @@ def transformer_block_without_spectral_norm():
 
 
 class TestTransformerBlock:
-    def test_output_shape_with_spectral_norm(
+    def test_forward_pass_with_spectral_norm(
         self, transformer_block_with_spectral_norm
     ):
         x = torch.randn(1, 10, 128)
         out = transformer_block_with_spectral_norm(x)
         assert out.shape == (1, 10, 128)
 
-    def test_output_shape_without_spectral_norm(
+    def test_forward_pass_without_spectral_norm(
         self, transformer_block_without_spectral_norm
     ):
         x = torch.randn(1, 10, 128)
@@ -67,23 +67,25 @@ def encoder_without_spectral_norm():
 
 
 class TestEncoder:
-    def test_output_shape_with_spectral_norm(self, encoder_with_spectral_norm):
+    def test_forward_pass_with_spectral_norm(self, encoder_with_spectral_norm):
         x = torch.randn(1, 10, 128)
         out = encoder_with_spectral_norm(x)
         assert out.shape == (1, 10, 128)
 
-    def test_output_shape_without_spectral_norm(self, encoder_without_spectral_norm):
+    def test_forward_pass_without_spectral_norm(self, encoder_without_spectral_norm):
         x = torch.randn(1, 10, 128)
         out = encoder_without_spectral_norm(x)
         assert out.shape == (1, 10, 128)
 
-    def test_output_shape_with_mask_spectral(self, encoder_with_spectral_norm):
+    def test_forward_pass_with_mask_and_spectral_norm(self, encoder_with_spectral_norm):
         x = torch.randn(1, 10, 128)
         mask = torch.randn(1, 10, 10)
         out = encoder_with_spectral_norm(x, mask)
         assert out.shape == (1, 10, 128)
 
-    def test_output_shape_with_mask_no_spectral(self, encoder_without_spectral_norm):
+    def test_forward_pass_with_mask_without_spectral_norm(
+        self, encoder_without_spectral_norm
+    ):
         x = torch.randn(1, 10, 128)
         mask = torch.randn(1, 10, 10)
         out = encoder_without_spectral_norm(x, mask)
