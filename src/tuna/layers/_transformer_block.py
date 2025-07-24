@@ -85,9 +85,9 @@ class Encoder(nn.Module):
             ]
         )
 
-        def forward(
-            self, x: torch.Tensor, mask: torch.Tensor | None = None
-        ) -> torch.Tensor:
-            for layer in self.layers:
-                x = layer(x, mask=mask)
-            return x
+    def forward(
+        self, x: torch.Tensor, mask: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        for layer in self.layers:
+            x = layer(x, mask=mask)
+        return x
