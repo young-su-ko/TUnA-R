@@ -77,7 +77,7 @@ class MLP(nn.Module):
     def forward(
         self, proteinA: torch.Tensor, proteinB: torch.Tensor
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-        concatenated = torch.cat((proteinA, proteinB), dim=1)
+        concatenated = torch.cat((proteinA, proteinB), dim=-1)
         x = self.fc1(concatenated)
         x = self.relu(x)
         x = self.do(x)
