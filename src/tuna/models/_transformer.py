@@ -6,7 +6,7 @@ from omegaconf import DictConfig
 from uncertaintyAwareDeepLearn import VanillaRFFLayer
 
 from tuna.layers._transformer_block import Encoder
-from tuna.models.model_utils import make_linear_layer
+from tuna.models.model_utils import make_linear_layer, masked_mean_pool
 
 
 class Transformer(nn.Module):
@@ -95,6 +95,27 @@ class Transformer(nn.Module):
         self._update_precision = update_precision
         self._get_variance = get_variance
 
+    def _encode_protein(
+        self, protein: torch.Tensor, mask: torch.Tensor
+    ) -> torch.Tensor:
+        """Down-project a single protein and encode with the intra-protein encoder."""
+        protein = self.down_project(protein)
+        return self.intra_encoder(protein, mask)
+
+    def _encode_pair_and_pool(
+        self, prot1: torch.Tensor, prot2: torch.Tensor, mask: torch.Tensor
+    ) -> torch.Tensor:
+        """Concatenate two proteins, run the inter-protein encoder, and mean-pool to a fixed-length vector."""
+        combined = torch.cat((prot1, prot2), dim=1)
+        encoded = self.inter_encoder(combined, mask)
+        return masked_mean_pool(encoded, mask)
+
+    def _aggregate_pairwise_features(
+        self, ab: torch.Tensor, ba: torch.Tensor
+    ) -> torch.Tensor:
+        """Aggregate AB and BA feature vectors by max-pooling."""
+        return torch.max(torch.stack([ab, ba], dim=-1), dim=-1)[0]
+
     def forward(
         self,
         proteinA: torch.Tensor,
@@ -103,19 +124,13 @@ class Transformer(nn.Module):
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         maskA, maskB, maskAB, maskBA = masks
 
-        proteinA = self.down_project(proteinA)
-        proteinB = self.down_project(proteinB)
+        proteinA = self._encode_protein(proteinA, maskA)
+        proteinB = self._encode_protein(proteinB, maskB)
 
-        proteinA = self.intra_encoder(proteinA, maskA)
-        proteinB = self.intra_encoder(proteinB, maskB)
+        ab_features = self._encode_pair_and_pool(proteinA, proteinB, maskAB)
+        ba_features = self._encode_pair_and_pool(proteinB, proteinA, maskBA)
 
-        proteinAB = torch.cat((proteinA, proteinB), dim=1)
-        proteinBA = torch.cat((proteinB, proteinA), dim=1)
-
-        proteinAB = self.inter_encoder(proteinAB, maskAB)
-        proteinBA = self.inter_encoder(proteinBA, maskBA)
-
-        ppi_feature, _ = torch.max(torch.cat((proteinAB, proteinBA), dim=-1), dim=1)
+        ppi_feature = self._aggregate_pairwise_features(ab_features, ba_features)
 
         if self.llgp:
             return self.output_layer(

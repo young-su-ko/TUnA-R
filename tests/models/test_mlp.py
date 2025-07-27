@@ -1,4 +1,3 @@
-import omegaconf
 import pytest
 import torch
 
@@ -15,18 +14,6 @@ def mlp_model_without_llgp():
         use_spectral_norm=True,
         out_targets=1,
         gp_config=None,
-    )
-
-
-@pytest.fixture
-def gp_config():
-    return omegaconf.DictConfig(
-        {
-            "rff_features": 128,
-            "gp_cov_momentum": -1,
-            "gp_ridge_penalty": 1,
-            "likelihood": "gaussian",
-        }
     )
 
 

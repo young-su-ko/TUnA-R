@@ -35,3 +35,21 @@ def is_llgp(model: nn.Module) -> bool:
     This is a helper function to check if the model is a LLGP model.
     """
     return model.llgp
+
+
+def masked_mean_pool(x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """
+    Mean-pools the sequence dimension of x using a binary mask.
+
+    Args:
+        x: Tensor of shape [batch, seq_len, features]
+        mask: Binary mask [batch, 1, seq_len, seq_len] (1 = keep, 0 = ignore)
+
+    Returns:
+        Tensor of shape [batch, features]. The masked mean pooled output.
+    """
+    mask = mask[:, 0, :, 0].unsqueeze(-1)  # [batch, seq_len, 1]
+    masked_values = x * mask
+    sum_valid = masked_values.sum(dim=1)
+    count_valid = mask.sum(dim=1)
+    return sum_valid / count_valid
