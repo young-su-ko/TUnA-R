@@ -1,14 +1,20 @@
-_target_: tuna.models._mlp.MLP
+_target_: tuna.pl_modules.lit_mlp.LitMLP
 
-protein_dim: 640
-hid_dim: 64
-dropout: 0.1
-llgp: True
-use_spectral_norm: True
-out_targets: 1
-
-gp_config:
-  rff_features: 4096
-  gp_cov_momentum: -1
-  gp_ridge_penalty: 1
-  likelihood: "binary_logistic"
+model_config:
+  protein_dim: 640
+  hid_dim: 64
+  dropout: 0.1
+  llgp: True
+  use_spectral_norm: True
+  out_targets: 1
+  gp_config:
+    rff_features: 4096
+    gp_cov_momentum: -1
+    gp_ridge_penalty: 1
+    likelihood: "binary_logistic"
+  
+train_config:
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  step_size: 2
+  gamma: 0.93

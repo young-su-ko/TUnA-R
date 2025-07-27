@@ -1,17 +1,19 @@
 import torch
 import torch.nn as nn
-from hydra.utils import instantiate
-from omegaconf import DictConfig
+from omegaconf import OmegaConf
 
+from tuna.models._transformer import Transformer
 from tuna.models.model_utils import is_llgp, mean_field_average
 from tuna.pl_modules.base_module import BaseModule
 from tuna.pl_modules.llgp_utils import LLGPMode, set_llgp_mode
 
 
 class LitTransformer(BaseModule):
-    def __init__(self, config: DictConfig):
-        super().__init__(config)
-        self.model = instantiate(config.model)
+    embedding_type: str = "residue"
+
+    def __init__(self, model_config: dict, train_config: dict):
+        super().__init__(config=OmegaConf.create(train_config))
+        self.model = Transformer(**model_config)
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
 
@@ -39,6 +41,13 @@ class LitTransformer(BaseModule):
             return mean_field_average(logits, var)
         return output
 
+    def _process_logits(
+        self, logits: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        probs = torch.sigmoid(logits).squeeze(-1)
+        preds = (probs > 0.5).long()
+        return probs, preds
+
     def forward(
         self,
         proteinA: torch.Tensor,
@@ -48,32 +57,20 @@ class LitTransformer(BaseModule):
         logits = self._get_logits(proteinA, proteinB, masks, mode=LLGPMode.INFERENCE)
         return torch.sigmoid(logits)
 
-    def training_step(self, batch, batch_idx):
+    def _shared_step(self, batch, mode: LLGPMode, prefix: str):
         proteinA, proteinB, y, masks = batch
-        logit = self._get_logits(proteinA, proteinB, masks, mode=LLGPMode.TRAINING)
-        loss = self.criterion(logit.squeeze(), y.float())
-        self.log("train_loss", loss)
-        self._log_binary_classification_metrics(
-            y, logit.squeeze(), logit, prefix="train/"
-        )
+        logits = self._get_logits(proteinA, proteinB, masks, mode)
+        probs, preds = self._process_logits(logits)
+        loss = self.criterion(logits.squeeze(-1), y.float())
+        self.log(f"{prefix}/loss", loss)
+        self._log_binary_classification_metrics(y, preds, probs, prefix=f"{prefix}/")
         return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, LLGPMode.TRAINING, "train")
 
     def validation_step(self, batch, batch_idx):
-        proteinA, proteinB, y, masks = batch
-        logit = self._get_logits(proteinA, proteinB, masks, mode=LLGPMode.VALIDATION)
-        loss = self.criterion(logit.squeeze(), y.float())
-        self.log("val_loss", loss)
-        self._log_binary_classification_metrics(
-            y, logit.squeeze(), logit, prefix="val/"
-        )
-        return loss
+        return self._shared_step(batch, LLGPMode.VALIDATION, "val")
 
     def test_step(self, batch, batch_idx):
-        proteinA, proteinB, y, masks = batch
-        logit = self._get_logits(proteinA, proteinB, masks, mode=LLGPMode.INFERENCE)
-        loss = self.criterion(logit.squeeze(), y.float())
-        self.log("test_loss", loss)
-        self._log_binary_classification_metrics(
-            y, logit.squeeze(), logit, prefix="test/"
-        )
-        return loss
+        return self._shared_step(batch, LLGPMode.INFERENCE, "test")

@@ -1,8 +1,15 @@
-_target_: tuna.models._mlp.MLP
+_target_: tuna.pl_modules.lit_mlp.LitMLP
 
-protein_dim: 640
-hid_dim: 64
-dropout: 0.1
-llgp: False
-use_spectral_norm: False
-out_targets: 1
+model_config:
+  protein_dim: 640
+  hid_dim: 64
+  dropout: 0.1
+  llgp: False
+  use_spectral_norm: False
+  out_targets: 1
+
+train_config:
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  step_size: 2
+  gamma: 0.93

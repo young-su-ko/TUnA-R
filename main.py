@@ -26,7 +26,7 @@ def main(cfg: DictConfig):
         LearningRateMonitor(logging_interval="step"),
     ]
 
-    lit_module = instantiate(cfg.pl_module)
+    lit_module = instantiate(cfg.model)
 
     trainer = pl.Trainer(
         max_epochs=cfg.trainer.max_epochs,
@@ -37,7 +37,7 @@ def main(cfg: DictConfig):
         callbacks=callbacks,
     )
 
-    data_module = PPIDataModule(config=cfg)
+    data_module = PPIDataModule(config=cfg, embedding_type=lit_module.embedding_type)
 
     trainer.fit(lit_module, data_module)
     trainer.test(lit_module, data_module)

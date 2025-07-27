@@ -36,18 +36,3 @@ def combine_masks(mask1: torch.Tensor, mask2: torch.Tensor) -> torch.Tensor:
     out[:, :, :L, :L] = mask1
     out[:, :, L:, L:] = mask2
     return out.bool()
-
-
-def resolve_embedding_type(model: str) -> str:
-    residue_models = {"tuna", "tfc"}
-    protein_models = {"esm_gp", "esm_mlp"}
-
-    if model in residue_models:
-        return "residue"
-    elif model in protein_models:
-        return "protein"
-    else:
-        raise ValueError(
-            f"Unknown model '{model}'. Must be one of: "
-            f"{', '.join(residue_models | protein_models)}"
-        )

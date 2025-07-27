@@ -1,16 +1,19 @@
 import torch
 import torch.nn as nn
-from hydra.utils import instantiate
+from omegaconf import OmegaConf
 
+from tuna.models._mlp import MLP
 from tuna.models.model_utils import is_llgp, mean_field_average
 from tuna.pl_modules.base_module import BaseModule
 from tuna.pl_modules.llgp_utils import LLGPMode, set_llgp_mode
 
 
 class LitMLP(BaseModule):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model = instantiate(config.model)
+    embedding_type: str = "protein"
+
+    def __init__(self, model_config: dict, train_config: dict):
+        super().__init__(config=OmegaConf.create(train_config))
+        self.model = MLP(**model_config)
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
 
@@ -33,7 +36,7 @@ class LitMLP(BaseModule):
 
     def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor) -> torch.Tensor:
         logits = self._get_logits(proteinA, proteinB, mode=LLGPMode.INFERENCE)
-        return torch.sigmoid(logits)
+        return torch.sigmoid(logits).squeeze()
 
     def training_step(self, batch, batch_idx):
         proteinA, proteinB, y = batch

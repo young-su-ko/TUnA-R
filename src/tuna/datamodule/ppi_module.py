@@ -9,7 +9,6 @@ from tuna.datamodule.datamodule_utils import (
     combine_masks,
     make_masks,
     pad_batch,
-    resolve_embedding_type,
 )
 
 
@@ -99,10 +98,10 @@ def collate_protein_batch(
 
 
 class PPIDataModule(pl.LightningDataModule):
-    def __init__(self, config: DictConfig):
+    def __init__(self, config: DictConfig, embedding_type: str):
         super().__init__()
         self.config = config
-        self.embedding_type = resolve_embedding_type(self.config.model)
+        self.embedding_type = embedding_type
 
         self.embeddings_path = Path(self.config.dataset.paths.embeddings)
         self.train_path = Path(self.config.dataset.paths.train)
