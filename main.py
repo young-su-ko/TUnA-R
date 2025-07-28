@@ -28,10 +28,7 @@ def main(cfg: DictConfig):
     lit_module = instantiate(cfg.model)
 
     trainer = pl.Trainer(
-        max_epochs=1,
-        limit_train_batches=200,
-        limit_val_batches=0,
-        limit_test_batches=0,
+        max_epochs=cfg.trainer.max_epochs,
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         logger=wandb_logger,
