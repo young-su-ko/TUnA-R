@@ -81,6 +81,8 @@ class LitTransformer(BaseModule):
         probs, preds = self._process_logits(logits)
         loss = self.criterion(logits.squeeze(-1), y.float())
 
+        self.log(f"{prefix}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+
         if prefix != "train":
             self._log_binary_classification_metrics(
                 y, preds, probs, prefix=f"{prefix}/"
