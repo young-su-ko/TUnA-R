@@ -62,8 +62,11 @@ class LitTransformer(BaseModule):
         logits = self._get_logits(proteinA, proteinB, masks, mode)
         probs, preds = self._process_logits(logits)
         loss = self.criterion(logits.squeeze(-1), y.float())
-        self.log(f"{prefix}/loss", loss)
-        self._log_binary_classification_metrics(y, preds, probs, prefix=f"{prefix}/")
+        self.log(f"{prefix}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        if prefix != "train":
+            self._log_binary_classification_metrics(
+                y, preds, probs, prefix=f"{prefix}/"
+            )
         return loss
 
     def training_step(self, batch, batch_idx):

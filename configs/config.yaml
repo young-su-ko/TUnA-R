@@ -5,7 +5,7 @@ defaults:
   - dataset: ???
   - _self_
 
-seed: 42
+seed: 47
 
 wandb:
   project: "TUnA-R"
@@ -19,6 +19,6 @@ trainer:
 datamodule:
   batch_size: 16
   max_sequence_length: 512
-  num_workers: 2
+  num_workers: 1
   pin_memory: True
   persistent_workers: True

@@ -17,7 +17,8 @@ class PPIDataset(Dataset):
         self, interaction_file_path: Path, embeddings: dict[str, torch.Tensor]
     ):
         self.embeddings = embeddings
-
+        self.protein_to_idx = {name: i for i, name in enumerate(self.embeddings.keys())}
+        self.embeddings_list = list(self.embeddings.values())
         self.data = []
         # Read a tsv file with columns: proteinA, proteinB, interaction
         # Not sure if this is best way to do this..
@@ -26,23 +27,18 @@ class PPIDataset(Dataset):
         with open(interaction_file_path, "r") as f:
             for line in f:
                 proteinA, proteinB, interaction = line.strip().split("\t")
-                # The main concern is the tsv file can be fragile
-                # If one tab is missing, the line will be split incorrectly
-
-                # Interaction is a string, convert to int
-                self.data.append((proteinA, proteinB, int(interaction)))
+                a_idx = self.protein_to_idx[proteinA]
+                b_idx = self.protein_to_idx[proteinB]
+                self.data.append(
+                    (a_idx, b_idx, torch.tensor(int(interaction), dtype=torch.long))
+                )
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        # Map names to embeddings
-        proteinA, proteinB, interaction = self.data[idx]
-        proteinA_embedding = self.embeddings[proteinA]
-        proteinB_embedding = self.embeddings[proteinB]
-        interaction = torch.tensor(interaction, dtype=torch.long)
-
-        return proteinA_embedding, proteinB_embedding, interaction
+        a_idx, b_idx, interaction = self.data[idx]
+        return self.embeddings_list[a_idx], self.embeddings_list[b_idx], interaction
 
 
 def collate_protein_batch(
