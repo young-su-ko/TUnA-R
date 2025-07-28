@@ -18,9 +18,9 @@ def main(cfg: DictConfig):
     callbacks = [
         ModelCheckpoint(
             dirpath="checkpoints",
-            filename=f"{cfg.model}-{cfg.dataset}-{{epoch:02d}}-{{val_auroc:.2f}}",
+            filename=f"{cfg.dataset}-{{epoch:02d}}-{{val_auroc:.2f}}",
             monitor="val/auroc",
-            mode="min",
+            mode="max",
             save_top_k=1,
         ),
     ]
@@ -29,13 +29,13 @@ def main(cfg: DictConfig):
 
     trainer = pl.Trainer(
         max_epochs=1,
-        limit_train_batches=50,
+        limit_train_batches=200,
         limit_val_batches=0,
-        profiler="simple",
+        limit_test_batches=0,
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
-        precision=cfg.trainer.precision,
         logger=wandb_logger,
+        precision=cfg.trainer.precision,
         callbacks=callbacks,
     )
 

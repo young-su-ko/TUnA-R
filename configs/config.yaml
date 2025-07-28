@@ -1,8 +1,8 @@
 defaults:
   # Available options: [tuna, t-fc, esm-mlp, esm-gp]
-  - model: ???
+  - model: tuna
   # Available options: [gold-standard, mouse, fly, worm, yeast, ecoli]
-  - dataset: ???
+  - dataset: gold-standard
   - _self_
 
 seed: 47
@@ -11,7 +11,7 @@ wandb:
   project: "TUnA-R"
 
 trainer:
-  max_epochs: None
+  max_epochs: 10
   accelerator: auto
   devices: auto
   precision: 32
@@ -19,6 +19,3 @@ trainer:
 datamodule:
   batch_size: 16
   max_sequence_length: 512
-  num_workers: 1
-  pin_memory: True
-  persistent_workers: True

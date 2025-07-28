@@ -10,3 +10,8 @@ outputs/
 __pycache__/
 wandb/
 embeddings/
+lightning_logs/
+pack_speedtest.py
+speed_test.py
+test_lightning.py
+dummy_*

@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from einops import rearrange
 
 from tuna.models.model_utils import make_linear_layer
 
@@ -28,19 +27,22 @@ class MultiHeadAttention(nn.Module):
     def forward(
         self, x: torch.Tensor, mask: torch.Tensor | None = None
     ) -> torch.Tensor:
-        q = self.q(x)
-        k = self.k(x)
-        v = self.v(x)
+        batch_size = x.size(0)
 
-        q = rearrange(q, "b s (h d) -> b h s d", h=self.n_heads)
-        k = rearrange(k, "b s (h d) -> b h s d", h=self.n_heads)
-        v = rearrange(v, "b s (h d) -> b h s d", h=self.n_heads)
+        q = self.q(x).view(batch_size, -1, self.n_heads, self.head_dim).transpose(1, 2)
+        k = self.k(x).view(batch_size, -1, self.n_heads, self.head_dim).transpose(1, 2)
+        v = self.v(x).view(batch_size, -1, self.n_heads, self.head_dim).transpose(1, 2)
 
         attn_out = F.scaled_dot_product_attention(
-            q, k, v, attn_mask=mask, dropout_p=self.dropout, is_causal=False
+            q,
+            k,
+            v,
+            attn_mask=mask,
+            dropout_p=self.dropout if self.training else 0.0,
+            is_causal=False,
         )
 
-        attn_out = rearrange(attn_out, "b h s d -> b s (h d)")
-        attn_out = self.output(attn_out)
-
-        return attn_out
+        attn_out = (
+            attn_out.transpose(1, 2).contiguous().view(batch_size, -1, self.hid_dim)
+        )
+        return self.output(attn_out)

@@ -6,6 +6,7 @@ from tuna.models._transformer import Transformer
 from tuna.models.model_utils import is_llgp, mean_field_average
 from tuna.pl_modules.base_module import BaseModule
 from tuna.pl_modules.llgp_utils import LLGPMode, set_llgp_mode
+from tuna.pl_modules.mask_maker import MaskMaker
 
 
 class LitTransformer(BaseModule):
@@ -16,6 +17,10 @@ class LitTransformer(BaseModule):
         self.model = Transformer(**model_config)
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
+        self.mask_maker = MaskMaker()
+
+    def on_fit_start(self):
+        self.mask_maker.device = self.device
 
     def _get_raw_output(
         self,
@@ -35,7 +40,12 @@ class LitTransformer(BaseModule):
         masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
         mode: LLGPMode,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-        output = self._get_raw_output(proteinA, proteinB, masks, mode)
+        output = self._get_raw_output(
+            proteinA,
+            proteinB,
+            masks,
+            mode,
+        )
         if is_llgp(self.model) and mode == LLGPMode.INFERENCE:
             logits, var = output
             return mean_field_average(logits, var)
@@ -54,19 +64,28 @@ class LitTransformer(BaseModule):
         proteinB: torch.Tensor,
         masks: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
     ) -> torch.Tensor:
-        logits = self._get_logits(proteinA, proteinB, masks, mode=LLGPMode.INFERENCE)
+        logits = self._get_logits(
+            proteinA,
+            proteinB,
+            masks,
+            mode=LLGPMode.INFERENCE,
+        )
         return torch.sigmoid(logits)
 
     def _shared_step(self, batch, mode: LLGPMode, prefix: str):
-        proteinA, proteinB, y, masks = batch
+        proteinA, proteinB, y, proteinA_lens, proteinB_lens = batch
+        masks = self.mask_maker.make_masks(proteinA_lens, proteinB_lens)
+
         logits = self._get_logits(proteinA, proteinB, masks, mode)
+
         probs, preds = self._process_logits(logits)
         loss = self.criterion(logits.squeeze(-1), y.float())
-        self.log(f"{prefix}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+
         if prefix != "train":
             self._log_binary_classification_metrics(
                 y, preds, probs, prefix=f"{prefix}/"
             )
+
         return loss
 
     def training_step(self, batch, batch_idx):
