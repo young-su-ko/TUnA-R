@@ -15,12 +15,18 @@ class LitTransformer(BaseModule):
     def __init__(self, model_config: dict, train_config: dict):
         super().__init__(config=OmegaConf.create(train_config))
         self.model = Transformer(**model_config)
+        self._initialize_weights()
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
-        self.mask_maker = MaskMaker()
+        self.mask_maker = MaskMaker(max_len=train_config.max_sequence_length)
 
     def on_fit_start(self):
         self.mask_maker.device = self.device
+
+    def _initialize_weights(self):
+        for p in self.model.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
 
     def _get_raw_output(
         self,
@@ -81,12 +87,16 @@ class LitTransformer(BaseModule):
         probs, preds = self._process_logits(logits)
         loss = self.criterion(logits.squeeze(-1), y.float())
 
-        self.log(f"{prefix}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(
+            f"{prefix}/loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=len(proteinA),
+        )
 
-        if prefix != "train":
-            self._log_binary_classification_metrics(
-                y, preds, probs, prefix=f"{prefix}/"
-            )
+        self.update_metrics(y, preds, probs, stage=prefix)
 
         return loss
 
@@ -98,3 +108,12 @@ class LitTransformer(BaseModule):
 
     def test_step(self, batch, batch_idx):
         return self._shared_step(batch, LLGPMode.INFERENCE, "test")
+
+    def on_train_epoch_end(self):
+        self.log_epoch_metrics("train")
+
+    def on_validation_epoch_end(self):
+        self.log_epoch_metrics("val")
+
+    def on_test_epoch_end(self):
+        self.log_epoch_metrics("test")

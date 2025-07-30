@@ -1,58 +1,52 @@
 import pytorch_lightning as pl
-import torch
 import torchmetrics
+from pytorch_optimizer import Lookahead
 from torch.optim import Adam, lr_scheduler
-from torch_optimizer import Lookahead
 
 
 class BaseModule(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        self.train_metrics = self._init_metrics(prefix="train/")
+        self.val_metrics = self._init_metrics(prefix="val/")
+        self.test_metrics = self._init_metrics(prefix="test/")
+
+    def _init_metrics(self, prefix: str):
+        return torchmetrics.MetricCollection(
+            {
+                "accuracy": torchmetrics.Accuracy(task="binary"),
+                "auroc": torchmetrics.AUROC(task="binary"),
+                "auprc": torchmetrics.AveragePrecision(task="binary"),
+                "precision": torchmetrics.Precision(task="binary"),
+                "recall": torchmetrics.Recall(task="binary"),
+                "f1": torchmetrics.F1Score(task="binary"),
+                "mcc": torchmetrics.MatthewsCorrCoef(task="binary"),
+            },
+            prefix=prefix,
+        )
 
     def _is_last_epoch(self) -> bool:
         return self.current_epoch == self.trainer.max_epochs - 1
 
-    def _log_binary_classification_metrics(
-        self,
-        y_true: torch.Tensor,
-        y_pred: torch.Tensor,
-        y_prob: torch.Tensor,
-        prefix: str = "",
-    ):
-        # y_true: ground truth labels (tensor, 0/1)
-        # y_pred: predicted labels (tensor, 0/1)
-        # y_prob: predicted probabilities (tensor, float)
+    def update_metrics(self, y_true, y_pred, y_prob, stage: str):
+        if stage == "train":
+            self.train_metrics.update(y_prob, y_true)
+        elif stage == "val":
+            self.val_metrics.update(y_prob, y_true)
+        elif stage == "test":
+            self.test_metrics.update(y_prob, y_true)
+
+    def log_epoch_metrics(self, stage: str):
         metrics = {
-            f"{prefix}accuracy": torchmetrics.functional.accuracy(
-                y_pred, y_true, task="binary"
-            ),
-            f"{prefix}auroc": torchmetrics.functional.auroc(
-                y_prob, y_true, task="binary"
-            ),
-            f"{prefix}auprc": torchmetrics.functional.average_precision(
-                y_prob, y_true, task="binary"
-            ),
-            f"{prefix}precision": torchmetrics.functional.precision(
-                y_pred, y_true, task="binary"
-            ),
-            f"{prefix}recall": torchmetrics.functional.recall(
-                y_pred, y_true, task="binary"
-            ),
-            f"{prefix}f1": torchmetrics.functional.f1_score(
-                y_pred, y_true, task="binary"
-            ),
-            f"{prefix}mcc": torchmetrics.functional.matthews_corrcoef(
-                y_pred, y_true, task="binary"
-            ),
-        }
-        # Specificity = TN / (TN + FP)
-        tn = ((y_pred == 0) & (y_true == 0)).sum().float()
-        fp = ((y_pred == 1) & (y_true == 0)).sum().float()
-        specificity = tn / (tn + fp + 1e-8)
-        metrics[f"{prefix}specificity"] = specificity
-        for k, v in metrics.items():
-            self.log(k, v, prog_bar=True, on_epoch=True, on_step=False)
+            "train": self.train_metrics,
+            "val": self.val_metrics,
+            "test": self.test_metrics,
+        }[stage]
+
+        computed = metrics.compute()
+        self.log_dict(computed, prog_bar=True, on_epoch=True, on_step=False)
+        metrics.reset()
 
     def _separate_weights_and_biases(self):
         weight_p, bias_p = [], []

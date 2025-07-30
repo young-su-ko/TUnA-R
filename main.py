@@ -18,7 +18,7 @@ def main(cfg: DictConfig):
     callbacks = [
         ModelCheckpoint(
             dirpath="checkpoints",
-            filename=f"{cfg.dataset}-{{epoch:02d}}-{{val_auroc:.2f}}",
+            filename="{epoch:02d}-{val_auroc:.2f}",
             monitor="val/auroc",
             mode="max",
             save_top_k=1,

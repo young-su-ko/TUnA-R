@@ -41,10 +41,8 @@ def collate_protein_batch(
     batch: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
     max_length: int,
     embedding_type: str,
-) -> (
-    tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-    | tuple[torch.Tensor, torch.Tensor, torch.Tensor, list[int], list[int]]
-):
+    stage: str,
+) -> tuple:
     """
     Collate function for PPI batches.
 
@@ -63,10 +61,19 @@ def collate_protein_batch(
         lensA = [p.size(0) for p in protAs]
         lensB = [p.size(0) for p in protBs]
 
-        padded_protAs = pad_batch(protAs, max_length)
-        padded_protBs = pad_batch(protBs, max_length)
+        if stage == "train":
+            pad_len_A = pad_len_B = max_length
+        else:
+            pad_len_A = max(lensA)
+            pad_len_B = max(lensB)
 
-        return padded_protAs, padded_protBs, labels, lensA, lensB
+        padded_protAs = pad_batch(protAs, pad_len_A)
+        padded_protBs = pad_batch(protBs, pad_len_B)
+
+        lensA_clamped = [min(length, pad_len_A) for length in lensA]
+        lensB_clamped = [min(length, pad_len_B) for length in lensB]
+
+        return padded_protAs, padded_protBs, labels, lensA_clamped, lensB_clamped
 
 
 class PPIDataModule(pl.LightningDataModule):
@@ -82,7 +89,6 @@ class PPIDataModule(pl.LightningDataModule):
         self.batch_size = self.config.datamodule.batch_size
 
     def setup(self, stage: str):
-        # Load embeddings once and keep in memory
         self.embeddings = torch.load(self.embeddings_path)
 
         if stage == "fit":
@@ -97,27 +103,27 @@ class PPIDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             collate_fn=lambda batch: collate_protein_batch(
-                batch, self.max_length, self.embedding_type
+                batch, self.max_length, self.embedding_type, "train"
             ),
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
-            batch_size=self.batch_size,
+            batch_size=1,
             shuffle=False,
             collate_fn=lambda batch: collate_protein_batch(
-                batch, self.max_length, self.embedding_type
+                batch, self.max_length, self.embedding_type, "val"
             ),
         )
 
     def test_dataloader(self):
         return DataLoader(
             self.test_dataset,
-            batch_size=self.batch_size,  # Use same batch size as training
+            batch_size=1,  # Use same batch size as training
             shuffle=False,
             collate_fn=lambda batch: collate_protein_batch(
-                batch, self.max_length, self.embedding_type
+                batch, self.max_length, self.embedding_type, "test"
             ),
         )
 
@@ -127,6 +133,6 @@ class PPIDataModule(pl.LightningDataModule):
             batch_size=1,
             shuffle=False,
             collate_fn=lambda batch: collate_protein_batch(
-                batch, embedding_type=self.embedding_type
+                batch, self.max_length, self.embedding_type, "predict"
             ),
         )

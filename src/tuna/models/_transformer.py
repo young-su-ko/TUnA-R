@@ -81,12 +81,6 @@ class Transformer(nn.Module):
         self._update_precision = False
         self._get_variance = False
 
-        self.apply(self._init_weights)
-
-    def _init_weights(self, module):
-        if isinstance(module, nn.Linear):
-            nn.init.xavier_uniform_(module.weight)
-
     def _set_llgp_mode(
         self, update_precision: bool = False, get_variance: bool = False
     ):

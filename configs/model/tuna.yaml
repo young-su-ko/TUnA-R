@@ -21,3 +21,4 @@ train_config:
   weight_decay: 0.00001
   step_size: 2
   gamma: 0.93
+  max_sequence_length: 512

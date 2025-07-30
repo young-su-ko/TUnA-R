@@ -30,6 +30,7 @@ class TransformerBlock(nn.Module):
         self.ffn = nn.Sequential(
             make_linear_layer(self.hid_dim, self.ffn_dim, self.use_spectral_norm),
             nn.SiLU(),
+            nn.Dropout(self.dropout),
             make_linear_layer(self.ffn_dim, self.hid_dim, self.use_spectral_norm),
         )
 
