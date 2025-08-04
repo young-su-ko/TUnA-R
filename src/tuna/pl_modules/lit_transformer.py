@@ -96,7 +96,7 @@ class LitTransformer(BaseModule):
             batch_size=len(proteinA),
         )
 
-        self.update_metrics(y, preds, probs, stage=prefix)
+        self._update_metrics(y, preds, probs, stage=prefix)
 
         return loss
 

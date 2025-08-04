@@ -14,8 +14,14 @@ class LitMLP(BaseModule):
     def __init__(self, model_config: dict, train_config: dict):
         super().__init__(config=OmegaConf.create(train_config))
         self.model = MLP(**model_config)
+        self._initialize_weights()
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
+
+    def _initialize_weights(self):
+        for p in self.model.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
 
     def _get_raw_output(
         self, proteinA: torch.Tensor, proteinB: torch.Tensor, mode: LLGPMode
@@ -34,36 +40,49 @@ class LitMLP(BaseModule):
             return mean_field_average(logits, var)
         return output
 
+    def _process_logits(
+        self, logits: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        probs = torch.sigmoid(logits)
+        preds = (probs > 0.5).float()
+        return probs, preds
+
     def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor) -> torch.Tensor:
         logits = self._get_logits(proteinA, proteinB, mode=LLGPMode.INFERENCE)
         return torch.sigmoid(logits).squeeze()
 
-    def training_step(self, batch, batch_idx):
+    def _shared_step(self, batch, mode: LLGPMode, prefix: str):
         proteinA, proteinB, y = batch
-        logit = self._get_logits(proteinA, proteinB, mode=LLGPMode.TRAINING)
+        logit = self._get_logits(proteinA, proteinB, mode)
+        probs, preds = self._process_logits(logit)
         loss = self.criterion(logit.squeeze(), y.float())
-        self.log("train_loss", loss)
-        self._log_binary_classification_metrics(
-            y, logit.squeeze(), logit, prefix="train/"
+
+        self.log(
+            f"{prefix}/loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
         )
+
+        self._update_metrics(y, preds, probs, stage=prefix)
+
         return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, LLGPMode.TRAINING, "train")
 
     def validation_step(self, batch, batch_idx):
-        proteinA, proteinB, y = batch
-        logit = self._get_logits(proteinA, proteinB, mode=LLGPMode.VALIDATION)
-        loss = self.criterion(logit.squeeze(), y.float())
-        self.log("val_loss", loss)
-        self._log_binary_classification_metrics(
-            y, logit.squeeze(), logit, prefix="val/"
-        )
-        return loss
+        return self._shared_step(batch, LLGPMode.VALIDATION, "val")
 
     def test_step(self, batch, batch_idx):
-        proteinA, proteinB, y = batch
-        logit = self._get_logits(proteinA, proteinB, mode=LLGPMode.INFERENCE)
-        loss = self.criterion(logit.squeeze(), y.float())
-        self.log("test_loss", loss)
-        self._log_binary_classification_metrics(
-            y, logit.squeeze(), logit, prefix="test/"
-        )
-        return loss
+        return self._shared_step(batch, LLGPMode.INFERENCE, "test")
+
+    def on_train_epoch_end(self):
+        self.log_epoch_metrics("train")
+
+    def on_validation_epoch_end(self):
+        self.log_epoch_metrics("val")
+
+    def on_test_epoch_end(self):
+        self.log_epoch_metrics("test")

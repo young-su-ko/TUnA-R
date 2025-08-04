@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+import torch
 import torchmetrics
 from pytorch_optimizer import Lookahead
 from torch.optim import Adam, lr_scheduler
@@ -29,7 +30,14 @@ class BaseModule(pl.LightningModule):
     def _is_last_epoch(self) -> bool:
         return self.current_epoch == self.trainer.max_epochs - 1
 
-    def update_metrics(self, y_true, y_pred, y_prob, stage: str):
+    def _process_logits(
+        self, logits: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        probs = torch.sigmoid(logits)
+        preds = (probs > 0.5).float()
+        return probs, preds
+
+    def _update_metrics(self, y_true, y_pred, y_prob, stage: str):
         if stage == "train":
             self.train_metrics.update(y_prob, y_true)
         elif stage == "val":
