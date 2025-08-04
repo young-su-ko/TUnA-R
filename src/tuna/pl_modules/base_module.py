@@ -45,7 +45,7 @@ class BaseModule(pl.LightningModule):
         elif stage == "test":
             self.test_metrics.update(y_prob, y_true)
 
-    def log_epoch_metrics(self, stage: str):
+    def _log_epoch_metrics(self, stage: str):
         metrics = {
             "train": self.train_metrics,
             "val": self.val_metrics,

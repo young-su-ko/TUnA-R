@@ -40,13 +40,6 @@ class LitMLP(BaseModule):
             return mean_field_average(logits, var)
         return output
 
-    def _process_logits(
-        self, logits: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        probs = torch.sigmoid(logits)
-        preds = (probs > 0.5).float()
-        return probs, preds
-
     def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor) -> torch.Tensor:
         logits = self._get_logits(proteinA, proteinB, mode=LLGPMode.INFERENCE)
         return torch.sigmoid(logits).squeeze()
@@ -79,10 +72,10 @@ class LitMLP(BaseModule):
         return self._shared_step(batch, LLGPMode.INFERENCE, "test")
 
     def on_train_epoch_end(self):
-        self.log_epoch_metrics("train")
+        self._log_epoch_metrics("train")
 
     def on_validation_epoch_end(self):
-        self.log_epoch_metrics("val")
+        self._log_epoch_metrics("val")
 
     def on_test_epoch_end(self):
-        self.log_epoch_metrics("test")
+        self._log_epoch_metrics("test")
