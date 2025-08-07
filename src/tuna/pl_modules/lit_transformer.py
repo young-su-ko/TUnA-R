@@ -12,13 +12,17 @@ from tuna.pl_modules.mask_maker import MaskMaker
 class LitTransformer(BaseModule):
     embedding_type: str = "residue"
 
-    def __init__(self, model_config: dict, train_config: dict):
-        super().__init__(config=OmegaConf.create(train_config))
+    def __init__(
+        self,
+        model_config: dict,
+        optimizer_config: dict,
+    ):
+        super().__init__(config=OmegaConf.create(optimizer_config))
         self.model = Transformer(**model_config)
         self._initialize_weights()
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
-        self.mask_maker = MaskMaker(max_len=train_config.max_sequence_length)
+        self.mask_maker = MaskMaker(self.device)
 
     def on_fit_start(self):
         self.mask_maker.device = self.device
@@ -55,7 +59,7 @@ class LitTransformer(BaseModule):
         if is_llgp(self.model) and mode == LLGPMode.INFERENCE:
             logits, var = output
             return mean_field_average(logits, var)
-        return output
+        return output.squeeze(-1)
 
     def forward(
         self,
@@ -78,7 +82,7 @@ class LitTransformer(BaseModule):
         logits = self._get_logits(proteinA, proteinB, masks, mode)
 
         probs, preds = self._process_logits(logits)
-        loss = self.criterion(logits.squeeze(-1), y.float())
+        loss = self.criterion(logits, y.float())
 
         self.log(
             f"{prefix}/loss",
@@ -92,21 +96,3 @@ class LitTransformer(BaseModule):
         self._update_metrics(y, preds, probs, stage=prefix)
 
         return loss
-
-    def training_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.TRAINING, "train")
-
-    def validation_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.VALIDATION, "val")
-
-    def test_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.INFERENCE, "test")
-
-    def on_train_epoch_end(self):
-        self._log_epoch_metrics("train")
-
-    def on_validation_epoch_end(self):
-        self._log_epoch_metrics("val")
-
-    def on_test_epoch_end(self):
-        self._log_epoch_metrics("test")

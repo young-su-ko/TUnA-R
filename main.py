@@ -1,5 +1,9 @@
+import os
+import uuid
+
 import hydra
 import pytorch_lightning as pl
+import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -11,14 +15,18 @@ from tuna.datamodule.ppi_module import PPIDataModule
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: DictConfig):
+    torch.set_float32_matmul_precision("high")
     pl.seed_everything(cfg.seed)
+    run_id = str(uuid.uuid4())[:8]
+    wandb_logger = WandbLogger(project=cfg.wandb.project, name=run_id)
 
-    wandb_logger = WandbLogger(project=cfg.wandb.project)
+    checkpoint_dir = f"checkpoints/{run_id}"
+    os.makedirs(checkpoint_dir, exist_ok=True)
 
     callbacks = [
         ModelCheckpoint(
-            dirpath="checkpoints",
-            filename="{epoch:02d}-{val_auroc:.2f}",
+            dirpath=checkpoint_dir,
+            filename="{epoch:02d}-{auroc:.2f}",
             monitor="val/auroc",
             mode="max",
             save_top_k=1,
@@ -28,12 +36,9 @@ def main(cfg: DictConfig):
     lit_module = instantiate(cfg.model)
 
     trainer = pl.Trainer(
-        max_epochs=cfg.trainer.max_epochs,
-        accelerator=cfg.trainer.accelerator,
-        devices=cfg.trainer.devices,
         logger=wandb_logger,
-        precision=cfg.trainer.precision,
         callbacks=callbacks,
+        **cfg.trainer,
     )
 
     data_module = PPIDataModule(config=cfg, embedding_type=lit_module.embedding_type)

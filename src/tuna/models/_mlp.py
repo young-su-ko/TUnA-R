@@ -17,7 +17,7 @@ class MLP(nn.Module):
         llgp: bool,
         use_spectral_norm: bool,
         out_targets: int,
-        gp_config: DictConfig | None,
+        gp_config: DictConfig | None = None,
     ):
         super().__init__()
         self.protein_dim = protein_dim

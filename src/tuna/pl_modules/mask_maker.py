@@ -4,9 +4,8 @@ import torch
 class MaskMaker:
     """Creates per-sequence and combined pairwise attention masks on GPU."""
 
-    def __init__(self, device=None, max_len=512):
+    def __init__(self, device: str = None):
         self.device = device
-        self.max_len = max_len
 
     def make_masks(
         self, lengths_A: list[int], lengths_B: list[int]
@@ -20,9 +19,11 @@ class MaskMaker:
 
         return (mask_A, mask_B, combined_mask_AB, combined_mask_BA)
 
-    def _make_sequence_mask(self, lengths, max_len):
+    def _make_sequence_mask(
+        self, lengths: list[int], max_sequence_length: int
+    ) -> torch.Tensor:
         lengths_tensor = torch.tensor(lengths, device=self.device)
-        idx = torch.arange(max_len, device=self.device).unsqueeze(0)
+        idx = torch.arange(max_sequence_length, device=self.device).unsqueeze(0)
         mask = idx < lengths_tensor.unsqueeze(1)
         mask = mask.unsqueeze(1).unsqueeze(-1)  # [B, 1, L, 1]
         return mask & mask.transpose(-1, -2)  # symmetric mask

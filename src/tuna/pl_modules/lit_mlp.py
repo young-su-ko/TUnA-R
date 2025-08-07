@@ -11,8 +11,8 @@ from tuna.pl_modules.llgp_utils import LLGPMode, set_llgp_mode
 class LitMLP(BaseModule):
     embedding_type: str = "protein"
 
-    def __init__(self, model_config: dict, train_config: dict):
-        super().__init__(config=OmegaConf.create(train_config))
+    def __init__(self, model_config: dict, optimizer_config: dict):
+        super().__init__(config=OmegaConf.create(optimizer_config))
         self.model = MLP(**model_config)
         self._initialize_weights()
         self.criterion = nn.BCEWithLogitsLoss()
@@ -61,21 +61,3 @@ class LitMLP(BaseModule):
         self._update_metrics(y, preds, probs, stage=prefix)
 
         return loss
-
-    def training_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.TRAINING, "train")
-
-    def validation_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.VALIDATION, "val")
-
-    def test_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.INFERENCE, "test")
-
-    def on_train_epoch_end(self):
-        self._log_epoch_metrics("train")
-
-    def on_validation_epoch_end(self):
-        self._log_epoch_metrics("val")
-
-    def on_test_epoch_end(self):
-        self._log_epoch_metrics("test")
