@@ -38,6 +38,7 @@ def main(cfg: DictConfig):
     trainer = pl.Trainer(
         logger=wandb_logger,
         callbacks=callbacks,
+        deterministic=True,
         **cfg.trainer,
     )
 
