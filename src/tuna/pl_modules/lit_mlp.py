@@ -37,8 +37,8 @@ class LitMLP(BaseModule):
 
         if is_llgp(self.model) and mode == LLGPMode.INFERENCE:
             logits, var = output
-            return mean_field_average(logits, var)
-        return output.squeeze(-1)
+            return mean_field_average(logits, var).reshape(-1)
+        return output.reshape(-1)
 
     def forward(self, proteinA: torch.Tensor, proteinB: torch.Tensor) -> torch.Tensor:
         logits = self._get_logits(proteinA, proteinB, mode=LLGPMode.INFERENCE)

@@ -58,8 +58,8 @@ class LitTransformer(BaseModule):
         )
         if is_llgp(self.model) and mode == LLGPMode.INFERENCE:
             logits, var = output
-            return mean_field_average(logits, var)
-        return output.squeeze(-1)
+            return mean_field_average(logits, var).reshape(-1)
+        return output.reshape(-1)
 
     def forward(
         self,
