@@ -8,12 +8,10 @@ class MaskMaker:
         self.device = device
 
     def make_masks(
-        self, lengths_A: list[int], lengths_B: list[int]
+        self, lengths_A: list[int], lengths_B: list[int], pad_len_A: int, pad_len_B: int
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        a_pad_length = max(lengths_A)
-        b_pad_length = max(lengths_B)
-        mask_A = self._make_sequence_mask(lengths_A, a_pad_length)
-        mask_B = self._make_sequence_mask(lengths_B, b_pad_length)
+        mask_A = self._make_sequence_mask(lengths_A, pad_len_A)
+        mask_B = self._make_sequence_mask(lengths_B, pad_len_B)
         combined_mask_AB = self._make_pair_mask(mask_A, mask_B)
         combined_mask_BA = self._make_pair_mask(mask_B, mask_A)
 

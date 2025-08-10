@@ -77,7 +77,9 @@ class LitTransformer(BaseModule):
 
     def _shared_step(self, batch, mode: LLGPMode, prefix: str):
         proteinA, proteinB, y, proteinA_lens, proteinB_lens = batch
-        masks = self.mask_maker.make_masks(proteinA_lens, proteinB_lens)
+        masks = self.mask_maker.make_masks(
+            proteinA_lens, proteinB_lens, proteinA.size(1), proteinB.size(1)
+        )
 
         logits = self._get_logits(proteinA, proteinB, masks, mode)
 

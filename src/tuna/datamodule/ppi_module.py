@@ -120,7 +120,7 @@ class PPIDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.test_dataset,
-            batch_size=1,  # Use same batch size as training
+            batch_size=1,
             shuffle=False,
             collate_fn=lambda batch: collate_protein_batch(
                 batch, self.max_length, self.embedding_type, "test"

@@ -3,7 +3,6 @@ import uuid
 
 import hydra
 import pytorch_lightning as pl
-import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -15,7 +14,6 @@ from tuna.datamodule.ppi_module import PPIDataModule
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: DictConfig):
-    torch.set_float32_matmul_precision("high")
     pl.seed_everything(cfg.seed)
     run_id = str(uuid.uuid4())[:8]
     wandb_logger = WandbLogger(project=cfg.wandb.project, name=run_id)
@@ -38,7 +36,6 @@ def main(cfg: DictConfig):
     trainer = pl.Trainer(
         logger=wandb_logger,
         callbacks=callbacks,
-        deterministic=True,
         **cfg.trainer,
     )
 
