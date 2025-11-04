@@ -24,7 +24,7 @@ def main(cfg: DictConfig):
     callbacks = [
         ModelCheckpoint(
             dirpath=checkpoint_dir,
-            filename="{epoch:02d}-{auroc:.2f}",
+            filename="{epoch:02d}-{auroc:.4f}",
             monitor="val/auroc",
             mode="max",
             save_top_k=1,
@@ -39,7 +39,9 @@ def main(cfg: DictConfig):
         **cfg.trainer,
     )
 
-    data_module = PPIDataModule(config=cfg, embedding_type=lit_module.embedding_type)
+    data_module = PPIDataModule(
+        config=cfg, embedding_type=lit_module.model_backbone.embedding_type
+    )
 
     trainer.fit(lit_module, data_module)
     trainer.test(lit_module, data_module)

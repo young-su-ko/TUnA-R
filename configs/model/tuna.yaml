@@ -1,4 +1,4 @@
-_target_: tuna.pl_modules.lit_transformer.LitTransformer
+_target_: tuna.pl_modules.lit_ppi.LitPPI
 
 model_config:
   protein_dim: 640

@@ -1,7 +1,7 @@
 defaults:
   # Available options: [tuna, t-fc, esm-mlp, esm-gp]
   - model: tuna
-  # Available options: [gold-standard, mouse, fly, worm, yeast, ecoli]
+  # For now gold-standard is the only available dataset
   - dataset: gold-standard
   - _self_
 
@@ -11,11 +11,12 @@ wandb:
   project: "TUnA-R"
 
 trainer:
+  # Different models will use different epoch numbers, adjust accordingly to original paper.
   max_epochs: 10
   accelerator: auto
   devices: auto
   precision: 32
 
 datamodule:
-  batch_size: 16
+  batch_size: 16 # Batch size could be increased for faster training, but keeping at 16 to match original paper.
   max_sequence_length: 512

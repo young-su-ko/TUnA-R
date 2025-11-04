@@ -126,13 +126,3 @@ class PPIDataModule(pl.LightningDataModule):
                 batch, self.max_length, self.embedding_type, "test"
             ),
         )
-
-    def predict_dataloader(self):
-        return DataLoader(
-            self.predict_dataset,
-            batch_size=1,
-            shuffle=False,
-            collate_fn=lambda batch: collate_protein_batch(
-                batch, self.max_length, self.embedding_type, "predict"
-            ),
-        )

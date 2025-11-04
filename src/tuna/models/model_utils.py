@@ -22,7 +22,7 @@ def make_linear_layer(
     in_features: int, out_features: int, use_spectral_norm: bool = True
 ) -> nn.Linear:
     """
-    This is a helper function to build linear layers with the option to use spectral norm.
+    This is a helper function to build linear layers and optionally wrap with spectral norm.
     """
     layer = nn.Linear(in_features, out_features)
     if use_spectral_norm:

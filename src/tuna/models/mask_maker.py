@@ -2,9 +2,12 @@ import torch
 
 
 class MaskMaker:
-    """Creates per-sequence and combined pairwise attention masks on GPU."""
+    """
+    Creates per-sequence and combined pairwise attention masks on selected device.
+    Making masks on GPU seems much faster than on CPU.
+    """
 
-    def __init__(self, device: str = None):
+    def __init__(self, device: str):
         self.device = device
 
     def make_masks(

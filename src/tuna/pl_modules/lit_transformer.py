@@ -3,10 +3,10 @@ import torch.nn as nn
 from omegaconf import OmegaConf
 
 from tuna.models._transformer import Transformer
+from tuna.models.mask_maker import MaskMaker
 from tuna.models.model_utils import is_llgp, mean_field_average
 from tuna.pl_modules.base_module import BaseModule
 from tuna.pl_modules.llgp_utils import LLGPMode, set_llgp_mode
-from tuna.pl_modules.mask_maker import MaskMaker
 
 
 class LitTransformer(BaseModule):

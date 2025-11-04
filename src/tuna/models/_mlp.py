@@ -9,6 +9,8 @@ from tuna.models.model_utils import make_linear_layer
 
 
 class MLP(nn.Module):
+    embedding_type: str = "protein"
+
     def __init__(
         self,
         protein_dim: int,

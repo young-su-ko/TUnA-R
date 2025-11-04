@@ -10,6 +10,8 @@ from tuna.models.model_utils import make_linear_layer, masked_mean_pool
 
 
 class Transformer(nn.Module):
+    embedding_type: str = "residue"
+
     def __init__(
         self,
         protein_dim: int,
