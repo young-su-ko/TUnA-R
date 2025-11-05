@@ -83,15 +83,7 @@ class Transformer(nn.Module):
         self._update_precision = False
         self._get_variance = False
 
-    def _set_llgp_mode(
-        self, update_precision: bool = False, get_variance: bool = False
-    ):
-        if not self.llgp:
-            return
-        self._update_precision = update_precision
-        self._get_variance = get_variance
-
-    def _encode_protein(
+    def _encode_single_protein(
         self, protein: torch.Tensor, mask: torch.Tensor
     ) -> torch.Tensor:
         """Down-project a single protein and encode with the intra-protein encoder."""
@@ -120,8 +112,8 @@ class Transformer(nn.Module):
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         maskA, maskB, maskAB, maskBA = masks
 
-        proteinA = self._encode_protein(proteinA, maskA)
-        proteinB = self._encode_protein(proteinB, maskB)
+        proteinA = self._encode_single_protein(proteinA, maskA)
+        proteinB = self._encode_single_protein(proteinB, maskB)
 
         ab_features = self._encode_pair_and_pool(proteinA, proteinB, maskAB)
         ba_features = self._encode_pair_and_pool(proteinB, proteinA, maskBA)

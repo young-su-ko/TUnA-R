@@ -21,26 +21,24 @@ def main(cfg: DictConfig):
     checkpoint_dir = f"checkpoints/{run_id}"
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    callbacks = [
-        ModelCheckpoint(
-            dirpath=checkpoint_dir,
-            filename="{epoch:02d}-{auroc:.4f}",
-            monitor="val/auroc",
-            mode="max",
-            save_top_k=1,
-        ),
-    ]
-
-    lit_module = instantiate(cfg.model)
+    lit_module = instantiate(cfg.model, _recursive_=True)
 
     trainer = pl.Trainer(
         logger=wandb_logger,
-        callbacks=callbacks,
+        callbacks=[
+            ModelCheckpoint(
+                dirpath=checkpoint_dir,
+                filename="{epoch:02d}-{auroc:.4f}",
+                monitor="val/auroc",
+                mode="max",
+                save_top_k=1,
+            )
+        ],
         **cfg.trainer,
     )
 
     data_module = PPIDataModule(
-        config=cfg, embedding_type=lit_module.model_backbone.embedding_type
+        config=cfg, embedding_type=lit_module.model.model_backbone.embedding_type
     )
 
     trainer.fit(lit_module, data_module)

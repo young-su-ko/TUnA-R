@@ -5,16 +5,16 @@ import esm
 import torch
 
 from tuna.models._transformer import Transformer
-from tuna.models.mask_maker import MaskMaker
+from tuna.models.mask_utils import make_masks
 
 
 class ESMWrapper:
-    def __init__(self, device: str):
-        self.device = device
+    def __init__(self, device: torch.device | str):
+        self.device = torch.device(device) if isinstance(device, str) else device
         self.esm_model, self.esm_alphabet = esm.pretrained.esm2_t30_150M_UR50D()
         self.batch_converter = self.esm_alphabet.get_batch_converter()
 
-        self.esm_model.to(device)
+        self.esm_model.to(self.device)
         self.esm_model.eval()
 
     @torch.no_grad()
@@ -31,14 +31,13 @@ class ESMWrapper:
 
 
 class InferenceWrapper:
-    def __init__(self, model, device: str):
+    def __init__(self, model, device: torch.device | str):
+        self.device = torch.device(device) if isinstance(device, str) else device
         self.model = model
-        self.device = device
-        self.model.to(device)
+        self.model.to(self.device)
         self.model.eval()
 
-        self.esm = ESMWrapper(device)
-        self.mask_maker = MaskMaker(self.device)
+        self.esm = ESMWrapper(self.device)
 
     @torch.no_grad()
     def predict(self, seqA: str, seqB: str) -> float:
@@ -52,7 +51,7 @@ class InferenceWrapper:
         # 3. Construct masks (just like training)
         lenA = embA.size(1)
         lenB = embB.size(1)
-        masks = self.mask_maker.make_masks([lenA], [lenB], lenA, lenB)
+        masks = make_masks([lenA], [lenB], lenA, lenB, device=self.device)
 
         prob = self.model(embA, embB, masks)  # shape (1,)
         return float(prob.item())

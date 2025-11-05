@@ -62,20 +62,6 @@ class MLP(nn.Module):
         self._update_precision = False
         self._get_variance = False
 
-        self.apply(self._init_weights)
-
-    def _init_weights(self, module: nn.Module):
-        if isinstance(module, nn.Linear):
-            nn.init.xavier_uniform_(module.weight)
-
-    def _set_llgp_mode(
-        self, update_precision: bool = False, get_variance: bool = False
-    ):
-        if not self.llgp:
-            return
-        self._update_precision = update_precision
-        self._get_variance = get_variance
-
     def forward(
         self, proteinA: torch.Tensor, proteinB: torch.Tensor
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:

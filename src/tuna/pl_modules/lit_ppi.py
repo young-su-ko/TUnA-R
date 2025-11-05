@@ -3,9 +3,9 @@ from omegaconf import OmegaConf
 
 from tuna.models._mlp import MLP
 from tuna.models._transformer import Transformer
+from tuna.models.llgp_utils import LLGPMode
 from tuna.models.ppi_predictor import PPIPredictor
 from tuna.pl_modules.base_module import BaseModule
-from tuna.pl_modules.llgp_utils import LLGPMode
 
 
 class LitPPI(BaseModule):
@@ -15,12 +15,6 @@ class LitPPI(BaseModule):
         self._initialize_weights()
         self.criterion = nn.BCEWithLogitsLoss()
         self.save_hyperparameters()
-
-    def on_fit_start(self):
-        if isinstance(self.model.model_backbone, Transformer) and hasattr(
-            self.model.model_backbone, "mask_maker"
-        ):
-            self.model.mask_maker.device = self.device
 
     def _initialize_weights(self):
         for p in self.model.model_backbone.parameters():
@@ -42,11 +36,11 @@ class LitPPI(BaseModule):
             raise ValueError(f"Unexpected batch format with {len(batch)} items")
 
         logits = self.model(
-            proteinA,
-            proteinB,
-            proteinA_lens,
-            proteinB_lens,
-            mode,
+            proteinA=proteinA,
+            proteinB=proteinB,
+            mode=mode,
+            lengthsA=proteinA_lens,
+            lengthsB=proteinB_lens,
             is_last_epoch=self._is_last_epoch(),
         )
 
@@ -65,3 +59,12 @@ class LitPPI(BaseModule):
         self._update_metrics(y, preds, probs, stage=prefix)
 
         return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, LLGPMode.TRAINING, "train")
+
+    def validation_step(self, batch, batch_idx):
+        return self._shared_step(batch, LLGPMode.VALIDATION, "val")
+
+    def test_step(self, batch, batch_idx):
+        return self._shared_step(batch, LLGPMode.INFERENCE, "test")

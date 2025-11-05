@@ -17,6 +17,7 @@ dependencies = [
     "ruff>=0.12.2",
     "torch>=2.7.1",
     "torchmetrics>=1.7.3",
+    "uncertainty-calibration>=0.1.4",
     "uncertaintyawaredeeplearn",
     "wandb>=0.20.1",
 ]

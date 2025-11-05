@@ -1,6 +1,7 @@
 _target_: tuna.pl_modules.lit_ppi.LitPPI
 
-model_config:
+model_backbone:
+  _target_: tuna.models._transformer.Transformer
   protein_dim: 640
   hid_dim: 64
   ff_dim: 256

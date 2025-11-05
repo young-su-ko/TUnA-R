@@ -4,8 +4,6 @@ import torchmetrics
 from pytorch_optimizer import Lookahead
 from torch.optim import Adam, lr_scheduler
 
-from tuna.pl_modules.llgp_utils import LLGPMode
-
 
 class BaseModule(pl.LightningModule):
     def __init__(self, config):
@@ -57,15 +55,6 @@ class BaseModule(pl.LightningModule):
         computed = metrics.compute()
         self.log_dict(computed, prog_bar=True, on_epoch=True, on_step=False)
         metrics.reset()
-
-    def training_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.TRAINING, "train")
-
-    def validation_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.VALIDATION, "val")
-
-    def test_step(self, batch, batch_idx):
-        return self._shared_step(batch, LLGPMode.INFERENCE, "test")
 
     def on_train_epoch_end(self):
         self._log_epoch_metrics("train")

@@ -17,7 +17,7 @@ class PPIDataset(Dataset):
         self.embeddings_list = list(self.embeddings.values())
         self.data = []
         # Read a tsv file with columns: proteinA, proteinB, interaction
-        # Not sure if this is best way to do this..
+        # Not sure if this is best way to do this.
         # Either way, it will have to be some reading of (proteinA, proteinB, interaction)
         # Then map names to embeddings
         with open(interaction_file_path, "r") as f:
