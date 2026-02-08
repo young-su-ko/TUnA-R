@@ -15,4 +15,7 @@ pack_speedtest.py
 speed_test.py
 test_lightning.py
 dummy_*
+exported_models/
 /*pytest_cache
+export_check.py
+MODEL_*.md

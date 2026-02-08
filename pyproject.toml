@@ -5,6 +5,7 @@ description = "The improved codebase for TUnA, a sequence-based protein-protein 
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "biopython>=1.86",
     "einops>=0.8.1",
     "fair-esm>=2.0.0",
     "huggingface-hub>=1.0.1",
@@ -22,6 +23,9 @@ dependencies = [
     "wandb>=0.20.1",
 ]
 
+[project.scripts]
+tuna = "tuna.inference.cli:main"
+
 [tool.uv.sources]
 uncertaintyawaredeeplearn = { git = "https://github.com/jlparkI/uncertaintyAwareDeepLearn", rev = "0.0.5" }
 [tool.setuptools.packages.find]
@@ -30,3 +34,8 @@ where = ["src"]
 [tool.ruff]
 lint.ignore = ["E501"]
 lint.extend-select = ["E", "F", "I"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+]

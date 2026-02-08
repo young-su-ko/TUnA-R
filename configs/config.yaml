@@ -17,6 +17,10 @@ trainer:
   devices: auto
   precision: 32
 
+save_model:
+  save: false
+  save_dir: backbone
+
 datamodule:
   batch_size: 16 # Batch size could be increased for faster training, but keeping at 16 to match original paper.
   max_sequence_length: 512

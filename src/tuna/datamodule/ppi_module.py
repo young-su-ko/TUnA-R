@@ -2,10 +2,12 @@ from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
+from hydra.utils import to_absolute_path
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader, Dataset
 
 from tuna.datamodule.datamodule_utils import pad_batch
+from tuna.datamodule.embedding_utils import ensure_embeddings
 
 
 class PPIDataset(Dataset):
@@ -82,14 +84,27 @@ class PPIDataModule(pl.LightningDataModule):
         self.config = config
         self.max_length = config.datamodule.max_sequence_length
         self.embedding_type = embedding_type
-        self.embeddings_path = Path(self.config.dataset.paths.embeddings)
-        self.train_path = Path(self.config.dataset.paths.train)
-        self.val_path = Path(self.config.dataset.paths.val)
-        self.test_path = Path(self.config.dataset.paths.test)
+        embeddings_path = getattr(self.config.dataset.paths, "embeddings", None)
+        self.embeddings_path = (
+            Path(to_absolute_path(embeddings_path)) if embeddings_path else None
+        )
+        fasta_path = getattr(self.config.dataset.paths, "fasta", None)
+        self.fasta_path = Path(to_absolute_path(fasta_path)) if fasta_path else None
+        self.train_path = Path(to_absolute_path(self.config.dataset.paths.train))
+        self.val_path = Path(to_absolute_path(self.config.dataset.paths.val))
+        self.test_path = Path(to_absolute_path(self.config.dataset.paths.test))
         self.batch_size = self.config.datamodule.batch_size
 
     def setup(self, stage: str):
-        self.embeddings = torch.load(self.embeddings_path)
+        self.embeddings = ensure_embeddings(
+            embeddings_path=self.embeddings_path,
+            fasta_path=self.fasta_path,
+            train_path=self.train_path,
+            val_path=self.val_path,
+            test_path=self.test_path,
+            device=self.config.trainer.get("accelerator", "cpu"),
+            batch_size=self.batch_size,
+        )
 
         if stage == "fit":
             self.train_dataset = PPIDataset(self.train_path, self.embeddings)
