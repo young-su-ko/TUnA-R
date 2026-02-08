@@ -31,27 +31,6 @@ The CLI is intentionally minimal for a single‑pair prediction. For batch infer
 
 Pretrained shortcuts: `tuna`, `tfc`, `esm_mlp`, `esm_gp` (loads weights from HuggingFace). You can also pass a full HF repo id or a local path if you trained your own models on your own datasets.
 
-Training:
-```
-tuna train --model tuna --dataset gold-standard --max-epochs 14
-```
-Pass additional Hydra overrides with repeated `--override` flags:
-```
-tuna train --model tuna --dataset gold-standard --override trainer.precision=16 --override trainer.devices=1
-```
-Notes:
-- This is a thin wrapper around `python train.py` with Hydra. Any override that works with Hydra can be passed via `--override`.
-- Model can also be trained by running `train.py` directly if you want more control, for example adding callbacks.
-- `--config-name` and `--config-path` let you point to a custom Hydra config entry.
-- Example with a custom config path:
-  ```
-  tuna train --config-path configs --config-name config --model tuna --dataset gold-standard --max-epochs 10
-  ```
-
-For training any of the four models (TUnA, T-FC, ESM-MLP, ESM-GP) on new datasets, please adjust the `configs/config.yaml` and the `configs/model/{model_name}.yaml` files accordingly. 
-
-> T-FC, ESM-MLP, and ESM-GP are all ablated versions of TUnA. See original paper for details.
-
 #### API
 
 <details>
@@ -91,12 +70,39 @@ Embedding cache example:
 store = EmbeddingStore.load("data/embeddings.pt")
 pipeline = InferencePipeline(predictor, store=store)
 scores = pipeline.predict_pairs(pairs, batch_size=32)
-store.save("data/embeddings.pt")
+store.save("data/embeddings.pt") # save embeddings for re-use
 ```
+> [!WARNING]  
+> Embeddings are saved as a Python dictionary and fully loaded into memory. While this works fine for a small to medium number of embeddings, can be problematic as the # embeddings grows.
+
+
 ### Training
 
+#### CLI
+
+```
+tuna train --model tuna --dataset gold-standard --max-epochs 14
+```
+Pass additional Hydra overrides with repeated `--override` flags:
+```
+tuna train --model tuna --dataset gold-standard --override trainer.precision=16 --override trainer.devices=1
+```
+Notes:
+- This is a thin wrapper around `python train.py` with Hydra. Any override that works with Hydra can be passed via `--override`.
+- Model can also be trained by running `train.py` directly if you want more control, for example adding callbacks.
+- `--config-name` and `--config-path` let you point to a custom Hydra config entry.
+- Example with a custom config path:
+  ```
+  tuna train --config-path configs --config-name config --model tuna --dataset gold-standard --max-epochs 10
+  ```
+
+For training any of the four models (TUnA, T-FC, ESM-MLP, ESM-GP) on new datasets, please adjust the `configs/config.yaml` and the `configs/model/{model_name}.yaml` files accordingly. 
+
+> T-FC, ESM-MLP, and ESM-GP are all ablated versions of TUnA. See original paper for details.
+
+
 <details>
-<summary><strong>Embedding Generation &amp; Management (Training)</strong></summary>
+<summary><strong>Embedding Generation &amp; Management (Read if using custom dataset!)</strong></summary>
 
 During training, the datamodule requires a protein embedding dictionary mapping `protein_id -> embedding`. You can provide this in your dataset config as `paths.embeddings`. If `embeddings` is missing or null, the code will generate embeddings from a FASTA file and save them as a `.pt` file.
 
@@ -125,7 +131,10 @@ paths:
 
 </details>
 
+
 ## Purpose of this repository
+
+<details><summary><strong>Why is there a new repo?</strong></summary>
 
 [TUnA](https://academic.oup.com/bib/article/25/5/bbae359/7720609), my first PhD project, was published a little over a year ago now. In the original [TUnA repository](https://github.com/Wang-lab-UCSD/TUnA), my main goal was providing a codebase so others could reproduce the results in the paper. However, I didn't consider how someone might interact with the code--whether this means running inference, modifying the architecture, or just understanding the components. In addition, I didn't know much about the best practices in writing code (modularity, type-hinting, single-responsibility, etc.).
 
@@ -147,18 +156,18 @@ While the project is over a year old now, I realized this is a great opportunity
 
 - Making it easier to run TUnA (e.g. CLI + PyPI package). Will also look into making it easy to fine-tune.
 - Weights on HuggingFace.
+</details>
 
 ## Overview of Codebase Structure
 
 ### Models
 
-To streamline the two different model architectures utilized in the manuscript (MLP-based vs Transformer-based), we defined a `PPIPredictor` class which can run either backbones. It is a `nn.Module` that will later passed to the PyTorch Lightning module for training, but also used directly for inference.
+To streamline the two different model architectures utilized for ablations in the manuscript (MLP-based vs Transformer-based), we defined a `PPIPredictor` class which can run either backbones. It is a `nn.Module` that will later passed to the PyTorch Lightning module for training, but also used without Lightning for inference.
 
-The `PPIPredictor`'s responsibility is to output an interaction prediction given the inputs.
 
 ### Lightning Module
 
-The `LitPPI` is the PyTorch Lightning module we will use to streamline training. It inherits from `BaseModule`, which just defines some helper and setup functions such as initializing the `torchmetrics` objects. `LitPPI`'s reponsibilities include: Initialization of model weights, optimizer configuration, and train/val loops.
+The `LitPPI` is the PyTorch Lightning module used to streamline training. It inherits from `BaseModule`, which just defines some helper and setup functions such as initializing the `torchmetrics` objects. `LitPPI`'s reponsibilities include: Initialization of model weights, optimizer configuration, and train/val loops.
 
 ### Configs
 
