@@ -1,7 +1,12 @@
-# TUnA: Refactored, Reimplemented, Rebooted, Reloaded (under construction)
+# TUnA: Refactored (Uncertainty-aware sequence-based PPI prediction)
+
+## Installation
+For now, installation is limited to cloning this repo and installing the necessary dependencies with `uv`. 
+
+> pip install tuna-r coming soon.
 
 
-<!-- ## Installation
+<!-- 
 Please install `uv` beforehand.
 
 ```bash
@@ -13,39 +18,7 @@ uv sync
 
 > We are working on an accompanying PyPI package as well -->
 
-## Usage
-
-### Training
-
-<details>
-<summary><strong>Embedding Generation &amp; Management (Training)</strong></summary>
-
-During training, the datamodule requires a protein embedding dictionary mapping `protein_id -> embedding`. You can provide this in your dataset config as `paths.embeddings`. If `embeddings` is missing or null, the code will generate embeddings from a FASTA file and save them as a `.pt` file.
-
-Expected dataset config fields:
-- `paths.train`, `paths.val`, `paths.test`: TSV files where the first two columns are protein IDs
-- `paths.embeddings`: path to a `.pt` embedding dictionary (optional)
-- `paths.fasta`: path to a FASTA file containing all protein IDs used in train/val/test (required if embeddings are missing)
-
-Safety checks:
-- If `paths.embeddings` exists, it is loaded and validated to contain all IDs from train/val/test.
-- If `paths.embeddings` is missing, the FASTA file is required.
-- If any IDs are missing from the FASTA, an error is raised. Please make sure all IDs are include din the FASTA file.
-
-Default output:
-- If `paths.embeddings` is not set, embeddings are saved to `embeddings/<dataset_name>_embeddings.pt`.
-
-Example (generate embeddings from FASTA):
-```
-paths:
-  train: "/path/to/train.tsv"
-  val: "/path/to/val.tsv"
-  test: "/path/to/test.tsv"
-  embeddings: null
-  fasta: "/path/to/all_sequences.fasta"
-```
-
-</details>
+## Usage (Inference & Training)
 
 ### Inference
 
@@ -120,7 +93,37 @@ pipeline = InferencePipeline(predictor, store=store)
 scores = pipeline.predict_pairs(pairs, batch_size=32)
 store.save("data/embeddings.pt")
 ```
+### Training
 
+<details>
+<summary><strong>Embedding Generation &amp; Management (Training)</strong></summary>
+
+During training, the datamodule requires a protein embedding dictionary mapping `protein_id -> embedding`. You can provide this in your dataset config as `paths.embeddings`. If `embeddings` is missing or null, the code will generate embeddings from a FASTA file and save them as a `.pt` file.
+
+Expected dataset config fields:
+- `paths.train`, `paths.val`, `paths.test`: TSV files where the first two columns are protein IDs
+- `paths.embeddings`: path to a `.pt` embedding dictionary (optional)
+- `paths.fasta`: path to a FASTA file containing all protein IDs used in train/val/test (required if embeddings are missing)
+
+Safety checks:
+- If `paths.embeddings` exists, it is loaded and validated to contain all IDs from train/val/test.
+- If `paths.embeddings` is missing, the FASTA file is required.
+- If any IDs are missing from the FASTA, an error is raised. Please make sure all IDs are include din the FASTA file.
+
+Default output:
+- If `paths.embeddings` is not set, embeddings are saved to `embeddings/<dataset_name>_embeddings.pt`.
+
+Example (generate embeddings from FASTA):
+```
+paths:
+  train: "/path/to/train.tsv"
+  val: "/path/to/val.tsv"
+  test: "/path/to/test.tsv"
+  embeddings: null
+  fasta: "/path/to/all_sequences.fasta"
+```
+
+</details>
 
 ## Purpose of this repository
 
