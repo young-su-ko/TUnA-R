@@ -1,5 +1,8 @@
 # TUnA: Refactored (Uncertainty-aware sequence-based PPI prediction)
 
+## Important! (4/21/2026)
+I realized I uploaded the wrong checkpoints to HuggingFace. If you have used the HuggingFace models before this date, please note the performance is much lower than expected, as I uploaded an early epoch checkpoint rather than the final checkpoint. I will update this as soon as I re-train and upload the correct checkpoints.
+
 ## Installation
 For now, installation is limited to cloning this repo and installing the necessary dependencies with `uv`. 
 
