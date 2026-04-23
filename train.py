@@ -10,7 +10,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 import wandb
 from tuna.datamodule.ppi_module import PPIDataModule
-from tuna.inference.export import export_from_checkpoint
+from tuna.inference.export import save_backbone_from_checkpoint
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
@@ -26,16 +26,15 @@ def main(cfg: DictConfig):
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=checkpoint_dir,
-        filename="{epoch:02d}-{auroc:.4f}",
-        monitor="val/auroc",
-        mode="max",
-        save_top_k=1,
+        filename="last.ckpt",
+        save_last=True,
     )
 
+    trainer_kwargs = dict(cfg.trainer)
     trainer = pl.Trainer(
         logger=wandb_logger,
         callbacks=[checkpoint_callback],
-        **cfg.trainer,
+        **trainer_kwargs,
     )
 
     data_module = PPIDataModule(
@@ -43,15 +42,13 @@ def main(cfg: DictConfig):
     )
 
     trainer.fit(lit_module, data_module)
-    trainer.test(lit_module, data_module)
+    trainer.test(model=lit_module, datamodule=data_module)
 
     if cfg.save_model.save:
         save_dir = os.path.join(cfg.save_model.save_dir, run_id)
-        ckpt_path = (
-            checkpoint_callback.best_model_path or checkpoint_callback.last_model_path
+        save_backbone_from_checkpoint(
+            checkpoint_callback.last_model_path, cfg.model.model_backbone, save_dir
         )
-        if ckpt_path:
-            export_from_checkpoint(ckpt_path, cfg.model.model_backbone, save_dir)
 
     wandb.finish()
 

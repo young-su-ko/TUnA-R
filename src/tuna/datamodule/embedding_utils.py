@@ -22,7 +22,7 @@ def _collect_ids(path: Path) -> set[str]:
             if len(columns) < 2:
                 warnings.warn(f"Skipping entry due to missing columns: {line.strip()}")
                 continue
-            proteinA, proteinB = columns
+            proteinA, proteinB = columns[:2]
             ids.add(proteinA.strip())
             ids.add(proteinB.strip())
     return ids
@@ -52,6 +52,7 @@ def ensure_embeddings(
     """
 
     ids = _collect_ids(train_path) | _collect_ids(val_path) | _collect_ids(test_path)
+    resolved_device = _normalize_device(device)
 
     if embeddings_path is not None and embeddings_path.exists():
         embeddings = torch.load(embeddings_path, map_location="cpu")
@@ -69,7 +70,7 @@ def ensure_embeddings(
         )
     _validate_embeddings(ids, fasta_dict)
 
-    embedder = ESMEmbedder(device=device)
+    embedder = ESMEmbedder(device=resolved_device)
     embeddings: dict[str, torch.Tensor] = {}
 
     ids_list = list(ids)
@@ -85,3 +86,9 @@ def ensure_embeddings(
         torch.save(embeddings, embeddings_path)
 
     return embeddings
+
+
+def _normalize_device(device: str) -> str:
+    if device == "auto":
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    return device

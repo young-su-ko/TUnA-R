@@ -4,6 +4,6 @@ name: gold-standard
 paths:
   train: "data/gold_standard/Intra1_interaction_1500_or_less.tsv"
   val: "data/gold_standard/Intra0_interaction_1500_or_less.tsv"
-  test: "data/gold_standard/Intra2_interaction_1500_or_less.tsv"
-  # embeddings: add path if you have pre-computed embeddings
+  test: "data/gold_standard/Intra2_interaction.tsv"
+  # embeddings: un-comment and add path if you have pre-computed embeddings
   fasta: "data/gold_standard/human_swissprot_oneliner.fasta"

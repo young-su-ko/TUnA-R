@@ -2,6 +2,7 @@ import json
 import os
 
 import torch
+from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
 
 
@@ -19,6 +20,7 @@ def _clean_model_cfg(model_cfg: DictConfig) -> dict:
 def _save_backbone(model_backbone, model_cfg: DictConfig, output_dir: str) -> None:
     os.makedirs(output_dir, exist_ok=True)
     cfg = _clean_model_cfg(model_cfg)
+    model_backbone.eval()
 
     with open(os.path.join(output_dir, "config.json"), "w") as f:
         json.dump(cfg, f, indent=2)
@@ -40,7 +42,20 @@ def save_backbone_from_checkpoint(
         model_cfg: Configuration of the model.
         output_dir: Path to the output directory for the exported model.
     """
-    from tuna.pl_modules.lit_ppi import LitPPI
+    checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    state_dict = checkpoint["state_dict"]
 
-    lit_module = LitPPI.load_from_checkpoint(ckpt_path)
-    _save_backbone(lit_module.model.model_backbone, model_cfg, output_dir)
+    model_backbone = instantiate(model_cfg)
+    backbone_state_dict = {}
+    prefix = "model.model_backbone."
+    for key, value in state_dict.items():
+        if key.startswith(prefix):
+            backbone_state_dict[key.removeprefix(prefix)] = value
+
+    if not backbone_state_dict:
+        raise ValueError(
+            f"No backbone weights with prefix '{prefix}' were found in checkpoint: {ckpt_path}"
+        )
+
+    model_backbone.load_state_dict(backbone_state_dict, strict=True)
+    _save_backbone(model_backbone, model_cfg, output_dir)

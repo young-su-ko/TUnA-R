@@ -1,5 +1,6 @@
 import json
 import os
+import warnings
 
 import torch
 
@@ -14,6 +15,7 @@ PRETRAINED_MODELS = {
     "esm_mlp": "yk0/tuna-r-esm_mlp",
     "esm_gp": "yk0/tuna-r-esm_gp",
 }
+CANONICAL_TUNA_MODEL_ID = "yk0/tuna-r-tuna"
 
 
 def resolve_model_id(repo_or_dir: str) -> str:
@@ -21,6 +23,14 @@ def resolve_model_id(repo_or_dir: str) -> str:
     if os.path.isdir(repo_or_dir):
         return repo_or_dir
     return PRETRAINED_MODELS.get(repo_or_dir, repo_or_dir)
+
+
+def infer_backbone_from_config(model_cfg: dict) -> str | None:
+    if {"ff_dim", "n_layers", "n_heads"}.issubset(model_cfg):
+        return "transformer"
+    if "hid_dim" in model_cfg and "protein_dim" in model_cfg:
+        return "mlp"
+    return None
 
 
 class Predictor:
@@ -76,6 +86,12 @@ class Predictor:
     @classmethod
     def from_pretrained(cls, repo_or_dir: str, device: str | torch.device):
         repo_or_dir = resolve_model_id(repo_or_dir)
+        if not os.path.isdir(repo_or_dir) and repo_or_dir != CANONICAL_TUNA_MODEL_ID:
+            warnings.warn(
+                "Non-'tuna' pretrained checkpoints in this repository are known to be incorrect on Hugging Face. "
+                "Results will likely be lower than expected; we recommend training from scratch instead.",
+                stacklevel=2,
+            )
         if os.path.isdir(repo_or_dir):
             config_path = os.path.join(repo_or_dir, "config.json")
             ckpt_path = os.path.join(repo_or_dir, "pytorch_model.bin")
@@ -88,9 +104,11 @@ class Predictor:
         with open(config_path) as f:
             model_cfg = json.load(f)
 
-        state_dict = torch.load(ckpt_path, map_location=device)
+        state_dict = torch.load(ckpt_path, map_location="cpu")
 
-        backbone = model_cfg.pop("backbone", None)
+        backbone = model_cfg.pop("backbone", None) or infer_backbone_from_config(
+            model_cfg
+        )
         if backbone is None:
             raise ValueError(
                 "config.json missing 'backbone'. Please specify either 'transformer' or 'mlp' in the config."

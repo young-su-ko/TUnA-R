@@ -18,8 +18,8 @@ trainer:
   precision: 32
 
 save_model:
-  save: false
-  save_dir: backbone
+  save: true
+  save_dir: backbone # adjust accordingly
 
 datamodule:
   batch_size: 16 # Batch size could be increased for faster training, but keeping at 16 to match original paper.
